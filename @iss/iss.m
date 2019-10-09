@@ -197,7 +197,7 @@ classdef iss
         % computed for each round. If BleedMatrixType == 'Single', a single
         % bleed matrix will be computed, combining spot colours from all
         % rounds.
-        BleedMatrixType = 'Separate';
+        BleedMatrixType = 'Single';
         
         % score and intensity thresholds to plot a spot (combi codes)
         CombiQualThresh = .8;         
