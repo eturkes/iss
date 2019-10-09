@@ -34,18 +34,34 @@ function o = extract_and_filter(o)
 
         bfreader.close();
         
-        % find x and y grid spacing as median of distances that are about
-        % right
-        dx = xypos(:,1)-xypos(:,1)'; % all pairs of x distances
-        xStep = median(dx(abs(1- dx(:)/o.MicroscopeStepSize)<.5));
-        dy = xypos(:,1)-xypos(:,1)'; % all pairs of y distances
-        yStep = median(dy(abs(1- dy(:)/o.MicroscopeStepSize)<.5));
+        if r == 1
+            % find x and y grid spacing as median of distances that are about
+            % right
+            dx = xypos(:,1)-xypos(:,1)'; % all pairs of x distances
+            xStep = median(dx(abs(1- dx(:)/o.MicroscopeStepSize)<.5));
+            dy = xypos(:,1)-xypos(:,1)'; % all pairs of y distances
+            yStep = median(dy(abs(1- dy(:)/o.MicroscopeStepSize)<.5));
         
-        % find coordinates for each tile
-        TilePosYX = fliplr(1+round((xypos - min(xypos))./[xStep yStep]));
-        if size(xypos, 1)==1
-            TilePosYX = [1,1];
+        
+            % find coordinates for each tile
+            o.TileInitialPosYX = fliplr(1+round((xypos - min(xypos))./[xStep yStep]));
+            TilePosYX = o.TileInitialPosYX;
+            %Below is a safeguard incase wrong positions found - can do
+            %this as we know what the answer should be.
+            MaxY = max(TilePosYX(:,1));
+            MaxX = max(TilePosYX(:,2));
+            if MaxY*MaxX ~= nSeries
+                warning('Number of tiles (%d) is not equal to maximum Y position (%d) multiplied by maximum X position (%d)'...
+                    , nSeries, MaxY, MaxX)
+                break
+            else
+                TilePosY = flip(repelem(1:MaxY,MaxX));
+                TilePosYX(:,1) = TilePosY;
+                TilePosX = repmat([flip(1:MaxX),1:MaxX],1,ceil(MaxY/2));
+                TilePosYX(1:nSeries,2) = TilePosX(1:nSeries);
+            end
         end
+        
         o.TilePosYXC = zeros(nSerieswPos*nChannels,3);
 
         % set up filename grid for this round
