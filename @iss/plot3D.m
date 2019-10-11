@@ -94,7 +94,7 @@ S.uGenes = unique(S.SpotGeneName);
 % which ones pass quality threshold (combi first)
 S.QualOK = o.quality_threshold;
 S.SpotYXZ = o.SpotGlobalYXZ;
-%S.Roi is the Roi for the current Z plane
+%S.Roi is the Roi for the initial Z plane
 S.Roi = [Roi(1:4),S.HalfZ-S.ZThick,S.HalfZ+S.ZThick];
 InRoi = all(int64(round(S.SpotYXZ))>=S.Roi([3 1 5]) & round(S.SpotYXZ)<=S.Roi([4 2 6]),2);
 PlotSpots = find(InRoi & S.QualOK);
@@ -124,6 +124,7 @@ else
 end
 
 assignin('base','issPlot3DZPlane',S.MinZ)
+assignin('base','issPlot3DSpotsShown',PlotSpots)
 
 S.sl = uicontrol('style','slide',...
                  'unit','pix',...

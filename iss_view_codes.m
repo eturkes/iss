@@ -26,12 +26,18 @@ function iss_view_codes(o, FigNo)
         set(gca, 'color', 'k');
 
         %If specify z plane in workspace as should be from plot3D, find spots closest to (y,x,ZPlane)
+
+        % instead of doing 3d distance to current plane, just select nearest
+        % shown spot to 2d position clicked
         try
-            zPlane = evalin('base', 'issPlot3DZPlane');     
-            [~,SpotNo] = min(sum(abs(o.SpotGlobalYXZ-[y,x,zPlane]),2));
+            %zPlane = evalin('base', 'issPlot3DZPlane');     
+            SpotsShown = evalin('base', 'issPlot3DSpotsShown');     
+            %[~,SpotNo_] = min(sum(abs(o.SpotGlobalYXZ(SpotsShown,:)-[y,x,zPlane]),2));
         catch
-            [~,SpotNo] = min(sum(abs(o.SpotGlobalYXZ(:,1:2)-[y,x]),2));
+            SpotsShown = find(o.quality_threshold);
         end
+        [~,SpotNo_] = min(sum(abs(o.SpotGlobalYXZ(SpotsShown,1:2)-[y,x]),2));
+        SpotNo = SpotsShown(SpotNo_);
         
         CodeNo = o.SpotCodeNo(SpotNo);
 
