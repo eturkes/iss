@@ -79,7 +79,7 @@ if o.Graphics
 end
 
 
-%% get spot local coordinates in all colour channels and run PCR
+%% get spot local coordinates in all colour channels
 AllBaseLocalYXZ = cell(nTiles,o.nBP, o.nRounds);
 
 
@@ -97,8 +97,7 @@ fprintf('\nLocating spots in each colour channel of tile   ');
 
 %For scaling need to be centered about 0 hence subtract this
 o.CentreCorrection = [1+(o.TileSz-1)/2,1+(o.TileSz-1)/2,1+(o.nZ-1)/2];
-o.D0 = zeros(nTiles,3,o.nRounds);
-o.InitialShiftScores = zeros(nTiles,o.nRounds);
+
 SE = fspecial3('ellipsoid',o.SmoothSize);
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
@@ -139,7 +138,7 @@ for t=1:nTiles
 end
 fprintf('\n');
 
-
+%% Find initial shifts between rounds and then run PCR
 %Should have a initial search range for each round. If only provided one,
 %set all other rounds to the same range.
 if size(o.FindSpotsSearch,1) == 1
@@ -151,15 +150,27 @@ if size(o.FindSpotsSearch,1) == 1
     clear FindSpotsSearch
 end
 
+o.D0 = zeros(nTiles,3,o.nRounds);
+o.InitialShiftScores = zeros(nTiles,o.nRounds);
+o.FindSpotsChangedSearch = zeros(o.nRounds,1);
+
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
     for r = o.UseRounds
         tic
-        [o.D0(t,:,r), o.InitialShiftScores(t,r)] = o.get_initial_shift2(AllBaseLocalYXZ{t,o.InitialShiftChannel,r},...
+        [o.D0(t,:,r), o.InitialShiftScores(t,r),ChangedSearch] = o.get_initial_shift2(AllBaseLocalYXZ{t,o.InitialShiftChannel,r},...
             o.RawLocalYXZ{t}, o.FindSpotsSearch{r},'FindSpots');
         toc
+        o.FindSpotsChangedSearch(r) = o.FindSpotsChangedSearch(r)+ChangedSearch;
+        
         fprintf('Tile %d, shift from anchor round to round %d: [%d %d %d], score %f\n', t, r, o.D0(t,:,r),...
             o.InitialShiftScores(t,r));
+        
+        %Change search range after 3 tiles or if search has had to be widened twice (This is for speed).
+        if t == 3 || (mod(o.FindSpotsChangedSearch(r),2) == 0) && (o.FindSpotsChangedSearch(r)>0)
+            o = o.GetNewSearchRange_FindSpots(t,r);
+        end
+        
     end
 end
 

@@ -67,6 +67,8 @@ vShifts = zeros(0,3);
 hShifts = zeros(0,3);
 vScore = zeros(0,1);
 hScore = zeros(0,1);
+vChangedSearch = 0;
+hChangedSearch = 0;
 
 %% now do the alignments
 for t=NonemptyTiles
@@ -75,35 +77,45 @@ for t=NonemptyTiles
     % can I align ref round to south neighbor?
     if y<nY && ~o.EmptyTiles(t+1)
         tic
-        [shift, score] = o.get_initial_shift2(o.RawLocalYXZ{t}, o.RawLocalYXZ{t+1}, o.RegSearch.South,'Register');
+        [shift, score, ChangedSearch] = o.get_initial_shift2(o.RawLocalYXZ{t}, o.RawLocalYXZ{t+1}, o.RegSearch.South,'Register');
         toc
         if all(isfinite(shift))
             VerticalPairs = [VerticalPairs; t, t+1];
             vShifts = [vShifts; shift];
             vScore = [vScore; score];
+            vChangedSearch = vChangedSearch + ChangedSearch;
         end
         %ShowPos(o, y, x, y+1, x, rr, shift);
         fprintf('Tile %d (%d, %d), down: shift %d %d %d, score %f\n', t, y, x, shift, score);
+        
+        %Change search range after 3 tiles or if search has had to be widened twice (This is for speed).
+        if size(vShifts,1) == 3 || (mod(vChangedSearch,2) == 0) && (vChangedSearch>0)
+            o = o.GetNewSearchRange_Register(vShifts,'South');
+        end
 
     end
     
     % can I align to east neighbor
     if x<nX && ~o.EmptyTiles(t+nY)
         tic
-        [shift, score] = o.get_initial_shift2(o.RawLocalYXZ{t}, o.RawLocalYXZ{t+nY}, o.RegSearch.East,'Register');
+        [shift, score, ChangedSearch] = o.get_initial_shift2(o.RawLocalYXZ{t}, o.RawLocalYXZ{t+nY}, o.RegSearch.East,'Register');
         toc
         if all(isfinite(shift))
             HorizontalPairs = [HorizontalPairs; t, t+nY];
             hShifts = [hShifts; shift];
             hScore = [hScore; score];
+            hChangedSearch = hChangedSearch + ChangedSearch;
         end        
         %ShowPos(o, y, x, y, x+1, rr, shift);
         fprintf('Tile %d (%d, %d), right: shift %d %d %d, score %f\n', t, y, x, shift, score);
+        
+        %Change search range after 3 tiles or if search has had to be widened twice (This is for speed).
+        if size(hShifts,1) == 3 || (mod(hChangedSearch,2) == 0) && (hChangedSearch>0)
+            o = o.GetNewSearchRange_Register(hShifts,'East');
+        end
 
     end
-            
-    
-    
+                    
 end
 %Convert z shift back to z pixel units
 vShifts = vShifts.*[1,1,o.XYpixelsize/o.Zpixelsize];
@@ -115,6 +127,8 @@ o.RegInfo.vShifts = vShifts;
 o.RegInfo.hShifts = hShifts;
 o.RegInfo.Scorev = vScore;
 o.RegInfo.Scoreh = hScore;
+o.RegInfo.vChangedSearch = vChangedSearch;
+o.RegInfo.hChangedSearch = hChangedSearch;
 %save(fullfile(o.OutputDirectory, 'o2.mat'), 'o');
 
 %% now we need to solve a set of linear equations for each shift,

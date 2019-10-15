@@ -9,6 +9,10 @@ end
 
 S.BestShift = shifts(score == max(score),:);
 
+if size(S.BestShift,1)>1
+    S.BestShift = S.BestShift(1,:);
+end
+
 
 S.fh = figure('units','pixels','position',[500 200 800 600],'name',name,'numbertitle','off');  %Left, Bottom, Width, Height
 S.Cmap = ScoreImage;
