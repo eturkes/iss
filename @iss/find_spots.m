@@ -1,4 +1,5 @@
-function o = find_spots(o)          %ADDING t2 BIT BACK IN
+function o = find_spots(o)         
+% SLOW - DON'T RECOMMEND USING THIS VERSION
 % o = o.find_spots;
 %
 % finds spots in all tiles using the reference channel, removes
@@ -74,7 +75,7 @@ for t=Tiles
     ind = ind+nMySpots;
 end
 if o.Graphics
-    plotAnchorSpotsGlobal(AllGlobalYXZ,o.nZ,'All global coords including duplicates')
+    plotAnchorSpotsGlobal(AllGlobalYXZ,'All global coords including duplicates')
 end
 
 %% now remove duplicates by keeping only spots detected on their home tile
@@ -89,7 +90,7 @@ ndLocalTile = AllLocalTile(NotDuplicate,:);
 nnd = sum(NotDuplicate);
 
 if o.Graphics
-    plotAnchorSpotsGlobal(ndGlobalYXZ,o.nZ,'Global coords without duplicates')
+    plotAnchorSpotsGlobal(ndGlobalYXZ,'Global coords without duplicates')
 end
 
 
@@ -114,7 +115,8 @@ fprintf('\nLocating spots in each colour channel of tile   ');
 
 %For scaling need to be centered about 0 hence subtract this
 o.CentreCorrection = [1+(o.TileSz-1)/2,1+(o.TileSz-1)/2,1+(o.nZ-1)/2];
-
+o.D0 = zeros(nTiles,3,o.nRounds);
+cc = zeros(nTiles,o.nRounds);
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
     
@@ -126,25 +128,25 @@ for t=1:nTiles
     
     [y, x] = ind2sub([nY nX], t);
     %Reload AnchorIm to do ImRegFFT3
-    %AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel);
-    %if o.SmoothSize
-    %    AnchorImSm = single(imfilter(AnchorIm, SE));
-    %    clear AnchorIm
-    %else
-    %    AnchorImSm = AnchorIm;
-    %end
+    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel);
+    if o.SmoothSize
+        AnchorImSm = single(imfilter(AnchorIm, SE));
+        clear AnchorIm
+    else
+        AnchorImSm = AnchorIm;
+    end
 
     for r = o.UseRounds
         % find spots whose home tile on round r is t      
         % open file for this tile/round       
         % now read in images for each base
         
-        FinalBaseIm = zeros(o.TileSz,o.TileSz,o.nZ);        %Max projected image of round to find initial shift
+        %FinalBaseIm = zeros(o.TileSz,o.TileSz,o.nZ);        %Max projected image of round to find initial shift
         for b = o.UseChannels              
 
             BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1);
             %SE = fspecial3('ellipsoid',[o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize]);
-            BaseIm = imfilter(BaseIm, SE);
+            BaseIm = imfilter(BaseIm, SE); %NOT SURE WHETHER IT IS RIGHT TO SMOOTH HERE OR NOT. IN 2D SPOTS WHERE DETECTED WITH NO SMOOTHING
             %o.MinThresh = max(mean(mean(BaseIm)));
             %o.DetectionThresh = 1.5*max(mean(mean(BaseIm)));
             % find spots for base b on tile t - we will use this for point
@@ -155,9 +157,9 @@ for t=1:nTiles
             %Scale so all in terms of XY pixel size. Import for PCR as find
             %nearest neighbours
             AllBaseLocalYXZ(t,b,r) = {CenteredSpots.*[1,1,o.Zpixelsize/o.XYpixelsize]};
-            FinalBaseIm = max(FinalBaseIm,BaseIm); %INSTEAD OF THIS, JUST USE IMAGE WITH MOST SPOTS
+            %FinalBaseIm = max(FinalBaseIm,BaseIm); %INSTEAD OF THIS, JUST USE IMAGE WITH MOST SPOTS
         end
-        [o.D0(t,:,r), cc] = o.ImRegFFt3D_FindSpots(FinalBaseIm,AnchorImSm, 0, o.RegMinSize); 
+        [o.D0(t,:,r), cc(t,r)] = o.ImRegFFt3D_FindSpots(BaseIm,AnchorImSm, 0, o.RegMinSize); %ADD cc TO ISS class!!!!!
         %cc
     end      
 end
@@ -385,8 +387,8 @@ end
 
 
 
-%%
 o.SpotGlobalYXZ = GoodGlobalYXZ;
 o.cSpotColors = GoodSpotColors;          
 %o.cAnchorIntensities = squeeze(GoodSpotColors(:,1,:));
 o.cSpotIsolated = GoodIsolated;
+

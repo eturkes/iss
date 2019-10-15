@@ -1,4 +1,5 @@
 function o=register(o)
+% SLOW - DON'T RECOMMEND USING THIS VERSION
 % o=iss_register(o)
 %
 % register images based on tile files
@@ -35,7 +36,7 @@ for t=NonemptyTiles(:)'
     
     if o.RegSmooth
         %Smoothing required else multiple pixels identified as local maxima
-        FE = fspecial3('ellipsoid',[2, 2, 2]);      %GET RID OF HARD CODING HERE
+        FE = fspecial3('ellipsoid',o.SmoothSize);   
         %max(max(max(Im3D)))
         RefImages(:,:,:,t) = imfilter(Im3D, FE);
         %max(max(max(RefImages(:,:,:,t))))
@@ -177,11 +178,12 @@ AnchorFile = fullfile(o.OutputDirectory, 'anchor_image.tif');
 for z = 1:MaxZ
     BigDapiIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
     BigAnchorIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
+    if mod(z,10)==0; fprintf('Loading Z Plane %d DAPI image\n', z); end
     for t=NonemptyTiles
         [y,x] = ind2sub([nY nX], t);
         MyOrigin = AnchorOrigin(t,:);
         FileZ = z-ZOrigin(t)+1;
-        if mod(t,10)==0; fprintf('Loading tile %d DAPI image\n', t); end
+        
         if ~isfinite(MyOrigin(1)); continue; end
         if FileZ < 1 || FileZ > o.nZ
             %Set tile to 0 if currently outside its area
