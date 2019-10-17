@@ -200,13 +200,26 @@ AnchorOrigin = round(o.TileOrigin(:,1:2,rr));           %Only consider YX coordi
 ZOrigin = round(o.TileOrigin(:,3,rr));                  %To align between Z planes if necessary
 MaxTileLoc = max(AnchorOrigin);
 MaxZ = ceil((max(ZOrigin) + o.nZ));
+
 o.BigDapiFile = fullfile(o.OutputDirectory, 'background_image.tif');
 AnchorFile = fullfile(o.OutputDirectory, 'anchor_image.tif');
 
+%saving options
+options.big=true;
+options.append=true;
+options.message=false;
+options.compress='lzw';
+
+fprintf('\nLoading Dapi Image, Z Plane   ');
 for z = 1:MaxZ
-    BigDapiIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
+    BigDapiIm = zeros( ceil((MaxTileLoc + o.TileSz)), 'uint16');
     BigAnchorIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
-    if mod(z,10)==0; fprintf('Loading Z Plane %d DAPI image\n', z); end
+    if z<10
+        fprintf('\b%d',z);
+    else
+        fprintf('\b\b%d',z);
+    end 
+
     for t=NonemptyTiles
         [y,x] = ind2sub([nY nX], t);
         MyOrigin = AnchorOrigin(t,:);
@@ -218,8 +231,14 @@ for z = 1:MaxZ
             LocalDapiIm = zeros(o.TileSz,o.TileSz);
             LocalAnchorIm = zeros(o.TileSz,o.TileSz);
         else
-            LocalDapiIm = imread(o.TileFiles{o.ReferenceRound,y,x,o.DapiChannel},FileZ);
-            LocalAnchorIm = imread(o.TileFiles{o.ReferenceRound,y,x,o.AnchorChannel}, FileZ);
+            DapiTiff = Tiff(o.TileFiles{o.ReferenceRound,y,x,o.DapiChannel},'r');
+            setDirectory(DapiTiff,FileZ);
+            LocalDapiIm = read(DapiTiff);
+            close(DapiTiff);
+            AnchorTiff = Tiff(o.TileFiles{o.ReferenceRound,y,x,o.AnchorChannel},'r');
+            setDirectory(AnchorTiff,FileZ);
+            LocalAnchorIm = read(AnchorTiff);
+            close(AnchorTiff);
         end
         BigDapiIm(floor(MyOrigin(1))+(1:o.TileSz), ...
             floor(MyOrigin(2))+(1:o.TileSz)) ...
@@ -228,12 +247,12 @@ for z = 1:MaxZ
             floor(MyOrigin(2))+(1:o.TileSz)) ...
             = LocalAnchorIm;
     end
-    imwrite(uint16(BigDapiIm),o.BigDapiFile,'tiff', 'writemode', 'append');
-    imwrite(uint16(BigAnchorIm), AnchorFile,'tiff', 'writemode', 'append');    
+    %imwrite(uint16(BigDapiIm),o.BigDapiFile,'tiff', 'writemode', 'append');
+    %imwrite(uint16(BigAnchorIm), AnchorFile,'tiff', 'writemode', 'append');
+    saveastiff(uint16(BigDapiIm), o.BigDapiFile, options);
+    saveastiff(uint16(BigAnchorIm), AnchorFile, options);
 end
-
-
-
+fprintf('\n');
 
 return
 end
