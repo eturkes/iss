@@ -88,7 +88,7 @@ function o = extract_and_filter(o)
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
                     Index = Index+1;
                     continue;
-                elseif r == o.ReferenceRound && (c ~= o.AnchorChannel) || (c ~= o.DapiChannel)
+                elseif (r == o.ReferenceRound && c ~= o.AnchorChannel) && (r == o.ReferenceRound && c ~= o.DapiChannel)
                     %Only need anchor and dapi tiles in reference round
                     continue;
                 end
