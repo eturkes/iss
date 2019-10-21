@@ -27,8 +27,9 @@ for c=1:nc
 
         cla; hold on
         MaxVal = prctile(reshape(o.cSpotColors(:,c,:),1,[]),99);
-        histogram(o.cSpotColors(~ShouldBe1,c,r), nBins, 'BinLimits', [0 MaxVal], 'FaceColor', 'b', 'EdgeColor', 'b', 'Normalization', 'probability');
-        histogram(o.cSpotColors( ShouldBe1,c,r), nBins, 'BinLimits', [0 MaxVal], 'FaceColor', 'r', 'EdgeColor', 'r', 'Normalization', 'probability');
+        MinVal = prctile(reshape(o.cSpotColors(:,c,:),1,[]),1);
+        histogram(o.cSpotColors(~ShouldBe1,c,r), nBins, 'BinLimits', [MinVal MaxVal], 'FaceColor', 'b', 'EdgeColor', 'b', 'Normalization', 'probability');
+        histogram(o.cSpotColors( ShouldBe1,c,r), nBins, 'BinLimits', [MinVal MaxVal], 'FaceColor', 'r', 'EdgeColor', 'r', 'Normalization', 'probability');
         
         title(sprintf('Color %d Round %d', c-1, r))
    %     set(gca, 'yscale', 'log')
