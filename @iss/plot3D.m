@@ -23,7 +23,7 @@ function plot3D(o, BackgroundImageFile, ZThick, Roi)
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 if nargin<3 || isempty(ZThick)
-    S.ZThick = inf;
+    S.ZThick = inf; % default is to plot all spots
 else
     S.ZThick = ZThick;
 end
@@ -41,6 +41,8 @@ if Roi(1) ~= 1 || Roi(3) ~= 1
     Roi(3) = 1;
 end
 
+S.PlotBackground = 1;
+
 if (nargin<2 || isempty(BackgroundImageFile)) && ~isempty(o.BigDapiFile) && ...
         ~isnumeric(o.BigDapiFile)
     BackgroundImageFile = o.BigDapiFile;
@@ -57,8 +59,14 @@ elseif ~isempty(BackgroundImageFile) && ~isnumeric(BackgroundImageFile)
         Image3D(:,:,z-Roi(5)+1) = imread(BackgroundImageFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
     end
     
+elseif isequal(BackgroundImageFile, 0)
+    Image3D = zeros(1,1,Roi(6));
+    S.PlotBackground = 0;
+    
 elseif isnumeric(BackgroundImageFile)
     Image3D = BackgroundImageFile;
+    
+    
     
 elseif isempty(o.BigDapiFile)
     warning('not sure what to do with BackgroundImage, setting to off');
@@ -67,10 +75,10 @@ end
 
 
 
-S.fh = figure(93754); 
-clf; 
+%S.fh = figure(93754); 
+clf; hold on; 
 
-set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
+%set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
 set(gcf, 'color', 'k');
 set(gca, 'color', 'k');
 
@@ -83,8 +91,10 @@ ylim([Roi(3) Roi(4)]);
 S.MinZ = Roi(5);
 S.HalfZ = floor((Roi(5)+Roi(6))/2);
 
-S.Background = imagesc(S.Image(:,:,S.HalfZ-S.MinZ+1)); hold on; colormap bone;
-title(['Z Plane ' num2str(S.HalfZ)],'Color','w');
+if S.PlotBackground
+    S.Background = imagesc(S.Image(:,:,S.HalfZ-S.MinZ+1)); colormap bone;
+    title(['Z Plane ' num2str(S.HalfZ)],'Color','w');
+end
 
 set(gca, 'YDir', 'normal');
 %axis on
@@ -126,6 +136,7 @@ end
 assignin('base','issPlot3DZPlane',S.MinZ)
 assignin('base','issPlot3DSpotsShown',PlotSpots)
 
+
 S.sl = uicontrol('style','slide',...
                  'unit','pix',...
                  'position',[60 8 693 18],...
@@ -142,7 +153,10 @@ function [] = sl_call(varargin)
 % Callback for the slider.
 [h,S] = varargin{[1,3]};  % calling handle and data structure.
 ZPlane = round(get(h,'value'))+S.MinZ-1;
-S.Background = imagesc(S.Image(:,:,ZPlane-S.MinZ+1)); hold on; colormap bone;
+
+if S.PlotBackground
+    S.Background = imagesc(S.Image(:,:,ZPlane-S.MinZ+1)); hold on; colormap bone;
+end
 %set(S.Background, 'XData', [S.Roi(3), S.Roi(4)]);
 %set(S.Background, 'YData', [S.Roi(1), S.Roi(2)]);
 %xlim([S.Roi(1) S.Roi(2)]);
