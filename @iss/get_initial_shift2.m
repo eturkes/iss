@@ -66,38 +66,39 @@ if BestScore < MinScore
     ChangedSearchRange = 1;
 end
 
-%Refine Search around maxima
-if BestScore >= MinScore
-    %Refined Search with smaller step
-    Search.Y = BestShift(1)-RefineSearch(1):RefineStep(1):BestShift(1)+RefineSearch(1);
-    Search.X = BestShift(2)-RefineSearch(2):RefineStep(2):BestShift(2)+RefineSearch(2);
-    ZShift = BestShift(3)*o.XYpixelsize/o.Zpixelsize;
-    Search.Z = ZShift-RefineSearch(3):RefineStep(3):ZShift+RefineSearch(3);
-    [NewShifts,NewScore] = get_score(Search,x,k,o);
-    shifts = [shifts;NewShifts];
-    Score = [Score;NewScore];
-    BestScore = max(Score);
-    BestShift = shifts(Score == BestScore,:);
-    
-    if size(BestShift,1)>1
-        BestShift = BestShift(1,:);
-    end
-    
-    %Final search with no step in single Z plane
-    Search.Y = BestShift(1)-RefineStep(1):BestShift(1)+RefineStep(1);
-    Search.X = BestShift(2)-RefineStep(2):BestShift(2)+RefineStep(2);
-    ZShift = BestShift(3)*o.XYpixelsize/o.Zpixelsize;
-    Search.Z = ZShift-RefineStep(3):ZShift+RefineStep(3);
-    [NewShifts,NewScore] = get_score(Search,x,k,o);
-    shifts = [shifts;NewShifts];
-    Score = [Score;NewScore];
-    BestScore = max(Score);
-    BestShift = shifts(Score == BestScore,:);
-
-else
+if BestScore < MinScore
     warning('BestScore %d is still less than the minimum score required, %d, even after widening search range. SHIFT PROBABLY WRONG',BestScore,MinScore);
     ChangedSearchRange = 0;
 end
+
+%Refine Search around maxima
+%Refined Search with smaller step
+Search.Y = BestShift(1)-RefineSearch(1):RefineStep(1):BestShift(1)+RefineSearch(1);
+Search.X = BestShift(2)-RefineSearch(2):RefineStep(2):BestShift(2)+RefineSearch(2);
+ZShift = BestShift(3)*o.XYpixelsize/o.Zpixelsize;
+Search.Z = ZShift-RefineSearch(3):RefineStep(3):ZShift+RefineSearch(3);
+[NewShifts,NewScore] = get_score(Search,x,k,o);
+shifts = [shifts;NewShifts];
+Score = [Score;NewScore];
+BestScore = max(Score);
+BestShift = shifts(Score == BestScore,:);
+
+if size(BestShift,1)>1
+    BestShift = BestShift(1,:);
+end
+
+%Final search with no step in single Z plane
+Search.Y = BestShift(1)-RefineStep(1):BestShift(1)+RefineStep(1);
+Search.X = BestShift(2)-RefineStep(2):BestShift(2)+RefineStep(2);
+ZShift = BestShift(3)*o.XYpixelsize/o.Zpixelsize;
+Search.Z = ZShift-RefineStep(3):ZShift+RefineStep(3);
+[NewShifts,NewScore] = get_score(Search,x,k,o);
+shifts = [shifts;NewShifts];
+Score = [Score;NewScore];
+BestScore = max(Score);
+BestShift = shifts(Score == BestScore,:);
+
+
 
 if size(BestShift,1)>1
     BestShift = BestShift(1,:);

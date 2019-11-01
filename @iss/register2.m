@@ -117,18 +117,58 @@ for t=NonemptyTiles
     end
                     
 end
+
 %Convert z shift back to z pixel units
 vShifts = vShifts.*[1,1,o.XYpixelsize/o.Zpixelsize];
 hShifts = hShifts.*[1,1,o.XYpixelsize/o.Zpixelsize];
+
+
+%Set any anomalous shifts to average of all other shifts
+%Anomalous if awful score or either shift is an outlier
+%Vertical
+vOutlier = zeros(size(vShifts));
+AnomalousScores = vScore<o.RegMinScore;
+if max(AnomalousScores)>0
+    warning('Looking at anomalous vShifts');
+    AnomalousShift = max(isoutlier(vShifts(:,1)),isoutlier(vShifts(:,2)),isoutlier(vShifts(:,3)));
+    AwfulScore = vScore < o.RegAbsoluteMinScore;
+    for i=1:size(vScore,1)
+        if min([AnomalousScores(i),AnomalousShift(i)+AwfulScore(i)])>0
+            vOutlier(i,:) = vShifts(i,:);
+            vShifts(i,:) = round(mean(vShifts(AnomalousScores==0,:)));    
+            warning('vShift(%d) changed',i);
+        end
+    end
+end
+
+%Horizontal
+hOutlier = zeros(size(hShifts));
+AnomalousScores = hScore<o.RegMinScore;
+if max(AnomalousScores)>0
+    warning('Looking at anomalous hShifts');
+    AnomalousShift = max(isoutlier(hShifts(:,1)),isoutlier(hShifts(:,2)),isoutlier(hShifts(:,3)));
+    AwfulScore = hScore < o.RegAbsoluteMinScore;
+    for i=1:size(hScore,1)
+        if min([AnomalousScores(i),AnomalousShift(i)+AwfulScore(i)])>0
+            hOutlier(i,:) = hShifts(i,:);
+            hShifts(i,:) = round(mean(hShifts(AnomalousScores==0,:)));
+            warning('hShift(%d) changed',i);
+        end
+    end
+end
+
+
 %Save registration info for debugging
 o.RegInfo.VerticalPairs = VerticalPairs;
-o.RegInfo.HorizontalPairs = HorizontalPairs;
 o.RegInfo.vShifts = vShifts;
-o.RegInfo.hShifts = hShifts;
 o.RegInfo.Scorev = vScore;
-o.RegInfo.Scoreh = hScore;
 o.RegInfo.vChangedSearch = vChangedSearch;
+o.RegInfo.vOutlier = vOutlier;
+o.RegInfo.HorizontalPairs = HorizontalPairs;
+o.RegInfo.hShifts = hShifts;
+o.RegInfo.Scoreh = hScore;
 o.RegInfo.hChangedSearch = hChangedSearch;
+o.RegInfo.hOutlier = hOutlier;
 %save(fullfile(o.OutputDirectory, 'o2.mat'), 'o');
 
 %% now we need to solve a set of linear equations for each shift,
@@ -212,7 +252,7 @@ options.compress='lzw';
 
 fprintf('\nLoading Dapi Image, Z Plane   ');
 for z = 1:MaxZ
-    BigDapiIm = zeros( ceil((MaxTileLoc + o.TileSz)), 'uint16');
+    BigDapiIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
     BigAnchorIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
     if z<10
         fprintf('\b%d',z);
@@ -247,8 +287,6 @@ for z = 1:MaxZ
             floor(MyOrigin(2))+(1:o.TileSz)) ...
             = LocalAnchorIm;
     end
-    %imwrite(uint16(BigDapiIm),o.BigDapiFile,'tiff', 'writemode', 'append');
-    %imwrite(uint16(BigAnchorIm), AnchorFile,'tiff', 'writemode', 'append');
     saveastiff(uint16(BigDapiIm), o.BigDapiFile, options);
     saveastiff(uint16(BigAnchorIm), AnchorFile, options);
 end
