@@ -21,7 +21,6 @@ function o = PointCloudRegister_NoAnchor3DNoCA(o, y, x0, nTiles, Options)     %M
 % Options: what type of fit. For now ignored, the only option is a general linear
 % model where x gets an extra column of ones and M is 2x3.
 %%
-MaxIter = 100;
 nD = 3;
 
 %centre anchor channel spots
@@ -88,14 +87,14 @@ Error = zeros(nTiles,o.nBP,o.nRounds);
 if isempty(o.ToPlot)
     fprintf('\nPCR - Iteration   ');
 end
-for i=1:MaxIter
+for i=1:o.PcIter
     if isempty(o.ToPlot)
         if i<10
             fprintf('\b%d', i);
         else
             fprintf('\b\b%d', i);
         end    
-        if i ==MaxIter
+        if i ==o.PcIter
             fprintf('\nPCR - Max number of iterations reached');
         end
     end

@@ -155,24 +155,24 @@ if size(o.FindSpotsSearch,1) == 1
 end
 
 o.D0 = zeros(nTiles,3,o.nRounds);
-o.InitialShiftScores = zeros(nTiles,o.nRounds);
-o.FindSpotsChangedSearch = zeros(o.nRounds,1);
-o.FindSpotsOutlierShifts = zeros(nTiles,3,o.nRounds);
+Scores = zeros(nTiles,o.nRounds);
+ChangedSearch = zeros(o.nRounds,1);
+OutlierShifts = zeros(nTiles,2,o.nRounds);
 
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
     for r = o.UseRounds
         tic
-        [o.D0(t,:,r), o.InitialShiftScores(t,r),ChangedSearch] = o.get_initial_shift2(AllBaseLocalYXZ{t,o.InitialShiftChannel,r},...
+        [o.D0(t,:,r), Scores(t,r),tChangedSearch] = o.get_initial_shift2(AllBaseLocalYXZ{t,o.InitialShiftChannel,r},...
             o.RawLocalYXZ{t}, o.FindSpotsSearch{r},'FindSpots');
         toc
-        o.FindSpotsChangedSearch(r) = o.FindSpotsChangedSearch(r)+ChangedSearch;
+        ChangedSearch(r) = ChangedSearch(r)+tChangedSearch;
         
         fprintf('Tile %d, shift from anchor round to round %d: [%d %d %d], score %f\n', t, r, o.D0(t,:,r),...
             o.InitialShiftScores(t,r));
         
         %Change search range after 3 tiles or if search has had to be widened twice (This is for speed).
-        if t == 3 || (mod(o.FindSpotsChangedSearch(r),2) == 0) && (o.FindSpotsChangedSearch(r)>0)
+        if t == 3 || (mod(ChangedSearch(r),2) == 0) && (ChangedSearch(r)>0)
             o = o.GetNewSearchRange_FindSpots(t,r);
         end
         
@@ -180,8 +180,12 @@ for t=1:nTiles
 end
 
 for r = o.UseRounds
-    [o.D0(:,:,r), o.FindSpotsOutlierShifts(:,:,r)] = o.AmendShifts(o.D0(:,:,r),o.InitialShiftScores(:,r),'FindSpots');
+    [o.D0(:,:,r), OutlierShifts(:,:,r)] = o.AmendShifts(o.D0(:,:,r),Scores(:,r),'FindSpots');
 end
+
+o.FindSpotsInfo.Scores = Scores;
+o.FindSpotsInfo.ChangedSearch = ChangedSearch;
+o.FindSpotsInfo.Outlier = OutlierShifts;
 
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYX');
 
