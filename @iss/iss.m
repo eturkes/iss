@@ -162,6 +162,16 @@ classdef iss
         %search
         RegisterRefinedStep = [3,3,1];
         
+        %if the score is below RegAbsoluteMinScore, the shift found will be
+        %set to the average of all the other shifts
+        RegAbsoluteMinScore = 4;
+        
+        %OutlierThresh is the number of scaled MAD away from the median
+        %that constitutes an outlier when considering the shifts in the
+        %registration or find_steps methods. These outliers are set to the
+        %average of all acceptable shifts if the score is low enough
+        OutlierThresh = 5;
+        
         
         %% parameters: spot detection
         
@@ -214,7 +224,7 @@ classdef iss
         
         %FindSpotsStep specifies the step size to use in the Y,X,Z direction of
         %FindSpotsSearch (Z in Z pixel units)
-        FindSpotsStep = [5,5,3];
+        FindSpotsStep = [5,5,2];
         
         %if the score mentioned above is below FindSpotsMinScore, the search
         %range will be enlarged.
@@ -235,6 +245,10 @@ classdef iss
         %FindSpotsRefinedStep is the step size to use in this refined
         %search
         FindSpotsRefinedStep = [3,3,1];
+        
+        %if the score is below FindSpotsAbsoluteMinScore, the shift found will be
+        %set to the average of all the other shifts in a particular round
+        FindSpotsAbsoluteMinScore = 10;
         
         
         %% parameters: spot calling
@@ -434,7 +448,7 @@ classdef iss
         
         % FindSpotsChangedSearch(r) is the number of times the search range
         % of tile r had to be changed during find_spots
-        FindSpotsChangedSearch;
+        FindSpotsChangedSearch;       
         
         % D0(t,2,r) stores the initial shift to use as a starting point for
         % the PCR on round r tile t.
@@ -443,6 +457,10 @@ classdef iss
         %InitialShiftScores(t,r) gives the score for the initial shift
         %found for tile t between the anchor round and round r
         InitialShiftScores;
+        
+        %FindSpotsOutlierShifts is a shift found that was wrong and subsequently changed
+        %to the average of all other shifts in that round - o.D0(:,:,r).
+        FindSpotsOutlierShifts;
         
         % A(2,2,c): stores the scaling correction for chromatic aberration
         % found by point cloud registration for color channel c

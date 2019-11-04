@@ -138,6 +138,10 @@ for t=1:nTiles
 end
 fprintf('\n');
 
+%Save workspace at various stages so dont have to go back to the beginning
+%and often fails at PCR step.
+save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYX');
+
 %% Find initial shifts between rounds and then run PCR
 %Should have a initial search range for each round. If only provided one,
 %set all other rounds to the same range.
@@ -153,6 +157,7 @@ end
 o.D0 = zeros(nTiles,3,o.nRounds);
 o.InitialShiftScores = zeros(nTiles,o.nRounds);
 o.FindSpotsChangedSearch = zeros(o.nRounds,1);
+o.FindSpotsOutlierShifts = zeros(nTiles,3,o.nRounds);
 
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
@@ -174,9 +179,15 @@ for t=1:nTiles
     end
 end
 
+for r = o.UseRounds
+    [o.D0(:,:,r), o.FindSpotsOutlierShifts(:,:,r)] = o.AmendShifts(o.D0(:,:,r),o.InitialShiftScores(:,r),'FindSpots');
+end
+
+save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYX');
+
 o = o.PointCloudRegister_NoAnchor3DNoCA(AllBaseLocalYXZ, o.RawLocalYXZ, nTiles);
 
-
+save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYX');
 %% decide which tile to read each spot off in each round. 
 % They are read of home tile if possible (always possible in ref round)
 % in other rounds might have to be a NWSE neighbor - but never a diagonal
@@ -298,7 +309,8 @@ GoodSpotColors = ndSpotColors(Good,:,:);
 GoodLocalTile = ndLocalTile(Good);
 GoodIsolated = ndIsolated(Good);
 
-save(fullfile(o.OutputDirectory, 'Intensities_NoAnchor.mat'), 'Good', 'ndGlobalYXZ', 'ndSpotColors', 'ndLocalTile');
+save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYX',...
+    'Good', 'ndGlobalYX', 'ndSpotColors', 'ndLocalTile','ndIsolated','ndPointCorrectedLocalYX','ndRoundYX','ndRoundTile');
 
 %% plot those that were found and those that weren't
 if o.Graphics
