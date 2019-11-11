@@ -157,7 +157,7 @@ end
 o.D0 = zeros(nTiles,3,o.nRounds);
 Scores = zeros(nTiles,o.nRounds);
 ChangedSearch = zeros(o.nRounds,1);
-OutlierShifts = zeros(nTiles,2,o.nRounds);
+OutlierShifts = zeros(nTiles,3,o.nRounds);
 
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
@@ -169,7 +169,7 @@ for t=1:nTiles
         ChangedSearch(r) = ChangedSearch(r)+tChangedSearch;
         
         fprintf('Tile %d, shift from anchor round to round %d: [%d %d %d], score %f\n', t, r, o.D0(t,:,r),...
-            o.InitialShiftScores(t,r));
+            Scores(t,r));
         
         %Change search range after 3 tiles or if search has had to be widened twice (This is for speed).
         if t == 3 || (mod(ChangedSearch(r),2) == 0) && (ChangedSearch(r)>0)
