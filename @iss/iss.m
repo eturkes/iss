@@ -110,8 +110,8 @@ classdef iss
         ToPlot;
         
         % InitialShiftChannel is the chosen channel to use to register all
-        % rounds to the anchor. Choose the one with clear spots, recommend 5,6 or 7.
-        InitialShiftChannel = 5;
+        % rounds to the anchor. Choose the one with clear spots, recommend 4,5,6 or 7.
+        InitialShiftChannel = 4;
         
         % MaxRoundShift(1) and MaxRoundShift(2) are the maximum absolute
         % shifts in the XY and Z directions respectively
@@ -218,6 +218,13 @@ classdef iss
         %MinThresh is the smallest value DectionThresh can get to       
         MinThresh;
         
+        %MinSpots is the smallest number of spots on a round/tile for a
+        %particular colour channel for hat color channel to be deemed
+        %suitable for finding the initial shifts to the anchor round. If
+        %all color channels have a tile with less spots than this, an error
+        %is thrown
+        MinSpots = 100;
+        
         %FindSpotsSearch.Y,FindSpotsSearch.X,FindSpotsSearch.Z 
         %(.Z in Z pixel units) are the ranges values of
         %shifts to check when looking for the initial shifts between rounds
@@ -231,7 +238,7 @@ classdef iss
         
         %if the score mentioned above is below FindSpotsMinScore, the search
         %range will be enlarged.
-        FindSpotsMinScore = 90;
+        FindSpotsMinScore = 70;
         
         %RegWidenSearch specifies how much to widen the search range in the
         %Y,X,Z directions respectively if the score is below MinRegScore.
@@ -448,6 +455,10 @@ classdef iss
         %Score(i) is the score for the Shifts(i) found between tiles given by Pairs(i)
         %ChangedSearch is number of times the search range had to be changed.
         RegInfo;    
+        
+        %AllBaseSpotNo(t,c,r) is the number of spots found on tile t,
+        %color channel c, round r.
+        AllBaseSpotNo;
         
         % D0(t,2,r) stores the initial shift to use as a starting point for
         % the PCR on round r tile t.
