@@ -3,7 +3,15 @@ function o = extract_and_filter(o)
 % original czi files
 
     o.TileFiles = cell(o.nRounds+o.nExtraRounds,1,1,1); % 1,1,1 because we don't yet know how many tiles
-
+    %New filter
+    h = -hanning(51);
+    h = -h/sum(h);
+    h(26-3:26+3) = h(26-3:26+3)+hanning(7)/sum(hanning(7));
+    h2D = ftrans2(h');
+    hzdirection = hanning(3);
+    hzdirection = reshape(hzdirection,[1,1,3]);
+    SE = h2D.*hzdirection;
+    
     for r = 1:o.nRounds+o.nExtraRounds       
         imfile = fullfile(o.InputDirectory, [o.FileBase{r}, o.RawFileExtension]);
 
@@ -78,7 +86,7 @@ function o = extract_and_filter(o)
 
             bfreader.setSeries(scene*t-1);
             for c = 1:nChannels
-                
+                tic
                 fName{Index} = fullfile(o.TileDirectory, ...
                     [o.FileBase{r}, '_t', num2str(t),'c', num2str(c), '.tif']);  
                 
@@ -94,13 +102,13 @@ function o = extract_and_filter(o)
                 end
                                                                         
                 %TopHat SE
-                if c == o.DapiChannel && r == o.ReferenceRound    
-                        %SE = strel3D_2(20,10);       % I.e. set to 8 microns for DAPI
-                        SE = get_3DSE(o.DapiR1YX,o.DapiR1Z,o.DapiR2YX,o.DapiR2Z);       
-                else
-                        %SE = strel3D_2(3,3);    %I.e. Set to 1 micron
-                        SE = get_3DSE(o.ExtractR1YX,o.ExtractR1Z,o.ExtractR2YX,o.ExtractR2Z);
-                end
+%                 if c == o.DapiChannel && r == o.ReferenceRound    
+%                         %SE = strel3D_2(20,10);       % I.e. set to 8 microns for DAPI
+%                         SE = get_3DSE(o.DapiR1YX,o.DapiR1Z,o.DapiR2YX,o.DapiR2Z);       
+%                 else
+%                         %SE = strel3D_2(3,3);    %I.e. Set to 1 micron
+%                         SE = get_3DSE(o.ExtractR1YX,o.ExtractR1Z,o.ExtractR2YX,o.ExtractR2Z);
+%                 end
 
                 I = zeros(o.TileSz,o.TileSz,o.nZ); 
                 for z = 1:o.nZ
@@ -109,9 +117,9 @@ function o = extract_and_filter(o)
                 end       
                 
                 %Make noise white first by divding amplitude of FT
-                tic
-                FT = fftn(I);
-                Norm_FT = FT ./ abs(FT);
+                
+                %FT = fftn(I);
+                %Norm_FT = FT ./ abs(FT);
                 %filter = fspecial3('gaussian',size(I),2);%DESCRIBE BETTER!!!!
                 %Shiftfilter = fftshift(filter);     %Shift for FT so centered on 0
                 %FT_filter = fftn(Shiftfilter);          
@@ -119,7 +127,7 @@ function o = extract_and_filter(o)
                 %Final_FT = Norm_FT .* NormFT_filter;
                 %IFS = ifftn(Final_FT);
                 
-                I = ifftn(Norm_FT);
+                %I = ifftn(Norm_FT);
                 I = padarray(I,(size(SE)-1)/2,'replicate','both');
                 IFS = convn(I,SE,'valid');    
                 
@@ -137,8 +145,8 @@ function o = extract_and_filter(o)
                     end
                     IFS = IFS*o.ExtractScale;
                 end
-                toc
-
+                
+                %IFS = IFS+ 32767;
                 % tophat hack - potentially use for DAPI images. Do 2D
                 % tophat then smooth in 3D.
                 %SE = strel('disk', 35);
@@ -160,7 +168,7 @@ function o = extract_and_filter(o)
                 o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
                 fprintf('Round %d tile %d colour channel %d finished.\n', r, t, c);                                               
                 Index = Index+1; 
-               
+                toc
             end
             bfreader.close();
             
