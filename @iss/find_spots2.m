@@ -384,7 +384,7 @@ if o.Graphics ==2
            
                 BaseIm = imread(o.TileFiles{r,yTile,xTile,o.FirstBaseChannel + b - 1}, z, 'PixelRegion', {[y1 y2], [x1 x2]});
                 if o.SmoothSize
-                    %BaseImSm = imfilter(double(BaseIm), fspecial('disk', o.SmoothSize));
+                    SE = fspecial3('ellipsoid',o.SmoothSize); 
                     BaseImSm = imfilter(BaseIm, SE);
                 else
                     BaseImSm = BaseIm;
@@ -395,7 +395,7 @@ if o.Graphics ==2
                 axis([x0-plsz, x0+plsz, y0-plsz, y0+plsz]);
                 plot(xlim, [y0 y0], 'w'); plot([x0 x0], ylim, 'w');
                 caxis([0 o.DetectionThresh*2]);
-                if r==1; ylabel(Ylegends{b+1}); end
+                if r==1; ylabel(Ylegends{b}); end
                 colorbar;
                 
                 title(sprintf('Round %d, Base %d, Tile %d', r, b, t));
