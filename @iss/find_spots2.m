@@ -98,7 +98,6 @@ fprintf('\nLocating spots in each colour channel of tile   ');
 %For scaling need to be centered about 0 hence subtract this
 o.CentreCorrection = [1+(o.TileSz-1)/2,1+(o.TileSz-1)/2,1+(o.nZ-1)/2];
 
-%SE = fspecial3('ellipsoid',o.SmoothSize);
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
     

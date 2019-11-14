@@ -76,7 +76,7 @@ classdef iss
         % the decimal points, should multiply image so max pixel number is
         % in the 10,000s (less than 65,536). If 'auto', it sets to
         % 10,000/max(Tile 1 round 1 colour channel 1).
-        ExtractScale = 'auto';
+        ExtractScale = 10;
         %ExtractScale = 5*10^7;
         
         % Dapi has different scaling as different filter used.
@@ -190,8 +190,9 @@ classdef iss
         % to detect spot, pixel needs to be above dilation with this radius
         DetectionRadius = 1;
         
-        % and pixel raw fluorescence needs to be above this value:
-        DetectionThresh = 300;
+        % and pixel raw fluorescence needs to be above this value. If set to auto,
+        %will use values in AutoThresh:
+        DetectionThresh = 'auto';
         
         % if o.DetectionThresh is 'auto' you get m* the pth percentile of
         % each frame

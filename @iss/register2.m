@@ -30,7 +30,7 @@ nTiles = nY*nX;
 o.RawLocalYXZ = cell(nTiles,1);  % cell array, giving spots in local coordinates
 o.RawIsolated = cell(nTiles,1);
 %SE = fspecial3('ellipsoid',[o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize]);
-SE = fspecial3('ellipsoid',o.SmoothSize);
+%SE = fspecial3('ellipsoid',o.SmoothSize);
 
 fprintf('\nDetecting reference spots in tile   ');
 for t=NonemptyTiles
@@ -43,11 +43,12 @@ for t=NonemptyTiles
     [y,x] = ind2sub([nY nX], t);
     AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel);
     if o.SmoothSize   
+        SE = fspecial3('ellipsoid',o.SmoothSize);
         AnchorImSm = imfilter(AnchorIm, SE);
     else
         AnchorImSm = AnchorIm;
     end
-    [o.RawLocalYXZ{t}, o.RawIsolated{t}] = o.detect_spots(AnchorImSm);
+    [o.RawLocalYXZ{t}, o.RawIsolated{t}] = o.detect_spots(AnchorImSm,t,o.AnchorChannel,rr);
 end
 fprintf('\n');
 %% get arrays ready

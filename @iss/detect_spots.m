@@ -1,5 +1,5 @@
-function [PeakPos, Isolated] = detect_spots(o, Image)
-% [PeaksPos, Isolated] = o.DetectSpots(Image)
+function [PeakPos, Isolated] = detect_spots(o, Image,t,c,r)
+% [PeaksPos, Isolated] = o.DetectSpots(Image,t,c,r)
 % 
 % find positions of spots corresponding to RNA detections in a b/w image.
 % The input SHOULD ALREADY HAVE BEEN TOP-HAT FILTERED (radius 3). If you
@@ -31,14 +31,19 @@ function [PeakPos, Isolated] = detect_spots(o, Image)
 % Kenneth D. Harris, 29/3/17
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
 
-if strcmp(o.DetectionThresh, 'auto')
-    DetectionThresh = o.AutoThreshMultiplier*prctile(Image(:),o.AutoThreshPercentile);
-elseif strcmp(o.DetectionThresh, 'multithresh')
-    ImNot0 = double(Image(Image>0));
-    Outliers = Image>(median(ImNot0)+ 7*mad(ImNot0));
-    DetectionThresh = multithresh(Image(~Outliers));
-elseif strcmp(o.DetectionThresh, 'medianx10')
-    DetectionThresh = median(Image(:))*10;
+% if strcmp(o.DetectionThresh, 'auto')
+%     DetectionThresh = o.AutoThreshMultiplier*prctile(Image(:),o.AutoThreshPercentile);
+% elseif strcmp(o.DetectionThresh, 'multithresh')
+%     ImNot0 = double(Image(Image>0));
+%     Outliers = Image>(median(ImNot0)+ 7*mad(ImNot0));
+%     DetectionThresh = multithresh(Image(~Outliers));
+% elseif strcmp(o.DetectionThresh, 'medianx10')
+%     DetectionThresh = median(Image(:))*10;
+% else
+%     DetectionThresh = o.DetectionThresh;
+% end
+if strcmpi(o.DetectionThresh, 'auto')
+    DetectionThresh = o.AutoThresh(t,c,r);
 else
     DetectionThresh = o.DetectionThresh;
 end
