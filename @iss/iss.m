@@ -147,8 +147,9 @@ classdef iss
         RegStep = [5,5,2];
         
         %if the score mentioned above is below RegMinScore, the search
-        %range will be enlarged.
-        RegMinScore = 30;
+        %range will be enlarged. If set to 'auto', will be set to median + 5*IQR
+        %of search scores.
+        RegMinScore = 'auto';
         
         %RegWidenSearch specifies how much to widen the search range in the
         %Y,X,Z directions respectively if the score is below MinRegScore.
@@ -168,6 +169,11 @@ classdef iss
         %if the score is below RegAbsoluteMinScore, the shift found will be
         %set to the average of all the other shifts
         RegAbsoluteMinScore = 4;
+        
+        %To be considered an outlier, a shift must have a score less than
+        %OutlierMinScore. AmendShifts will not run unless atleast one of
+        %the shifts has a score less than this.
+        OutlierMinScore = 200;
         
         %OutlierThresh is the number of scaled MAD away from the median
         %that constitutes an outlier when considering the shifts in the
@@ -190,7 +196,12 @@ classdef iss
         % if o.DetectionThresh is 'auto' you get m* the pth percentile of
         % each frame
         AutoThreshPercentile = 99.95;
-        AutoThreshMultiplier = .25;
+        
+        % AutoThresh(t,c,r) is the threshold found automatically for tile
+        % t, color channel c, round r. Its value is
+        % AutoThreshMultiplier*Median(abs(ScaledFilteredTile)).
+        AutoThresh;
+        AutoThreshMultiplier = 10;
         
         %If find less than o.minPeaks spots then DectionThresh is lowered by
         %o.ThreshParam        
@@ -237,8 +248,9 @@ classdef iss
         FindSpotsStep = [5,5,2];
         
         %if the score mentioned above is below FindSpotsMinScore, the search
-        %range will be enlarged.
-        FindSpotsMinScore = 70;
+        %range will be enlarged. If set to 'auto', will be set to median + 5*IQR
+        %of search scores.
+        FindSpotsMinScore = 'auto';
         
         %RegWidenSearch specifies how much to widen the search range in the
         %Y,X,Z directions respectively if the score is below MinRegScore.

@@ -98,7 +98,7 @@ fprintf('\nLocating spots in each colour channel of tile   ');
 %For scaling need to be centered about 0 hence subtract this
 o.CentreCorrection = [1+(o.TileSz-1)/2,1+(o.TileSz-1)/2,1+(o.nZ-1)/2];
 
-SE = fspecial3('ellipsoid',o.SmoothSize);
+%SE = fspecial3('ellipsoid',o.SmoothSize);
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
     
@@ -122,14 +122,14 @@ for t=1:nTiles
             %    o.DetectionThresh = 900;
             %end
             BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1);
-            BaseIm = imfilter(BaseIm, SE);
+            %BaseIm = imfilter(BaseIm, SE);
             %o.MinThresh = max(mean(mean(BaseIm)));
             %o.DetectionThresh = 1.5*max(mean(mean(BaseIm)));
             % find spots for base b on tile t - we will use this for point
             % cloud registration only, we don't use these detections to
             % detect colors, we read the colors off the
             % pointcloud-corrected positions of the spots detected in the reference round home tiles  
-            CenteredSpots = o.detect_spots(BaseIm) - o.CentreCorrection;
+            CenteredSpots = o.detect_spots(BaseIm,t,b,r) - o.CentreCorrection;
             %Scale so all in terms of XY pixel size. Import for PCR as find
             %nearest neighbours
             AllBaseLocalYXZ(t,b,r) = {CenteredSpots.*[1,1,o.Zpixelsize/o.XYpixelsize]};
@@ -287,6 +287,7 @@ for t=1:nTiles
             
             if o.SmoothSize
                 %BaseImSm = imfilter(double(BaseIm), fspecial('disk', o.SmoothSize));
+                SE = fspecial3('ellipsoid',o.SmoothSize);
                 BaseImSm = imfilter(BaseIm, SE);
             else
                 BaseImSm = BaseIm;
