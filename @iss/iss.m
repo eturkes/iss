@@ -217,7 +217,7 @@ classdef iss
         IsolationThresh = 60;
         
         % for visualization during spot detection
-        FindSpotsRoi = [1742 1755 213 227];
+        FindSpotsRoi = [1000,1500,1000,1500,15,20];
         
         % Each spot will be allocated to home tile if possible - but not if
         % it is this close to the edge, because of aberrations
