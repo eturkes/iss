@@ -3,14 +3,17 @@ function o = extract_and_filter(o)
 % original czi files
 
     o.TileFiles = cell(o.nRounds+o.nExtraRounds,1,1,1); % 1,1,1 because we don't yet know how many tiles
+    
     %New filter
     h = -hanning(51);
     h = -h/sum(h);
     h(26-3:26+3) = h(26-3:26+3)+hanning(7)/sum(hanning(7));
-    h2D = ftrans2(h');
-    hzdirection = hanning(3);
-    hzdirection = reshape(hzdirection,[1,1,3]);
-    SE = h2D.*hzdirection;
+    SE = ftrans2(h');
+%     h2D = ftrans2(h');
+%     hzdirection = hanning(3);
+%     hzdirection = reshape(hzdirection,[1,1,3]);
+%     SE = h2D.*hzdirection;
+    
     
     for r = 1:o.nRounds+o.nExtraRounds       
         imfile = fullfile(o.InputDirectory, [o.FileBase{r}, o.RawFileExtension]);
@@ -43,6 +46,8 @@ function o = extract_and_filter(o)
         bfreader.close();
         
         if r == 1
+            o.AutoThresh = zeros(nSerieswPos,nChannels,o.nRounds+o.nExtraRounds);  
+            
             % find x and y grid spacing as median of distances that are about
             % right
             dx = xypos(:,1)-xypos(:,1)'; % all pairs of x distances
@@ -144,17 +149,12 @@ function o = extract_and_filter(o)
                         o.ExtractScale = 10000/max(max(max(IFS)));
                     end
                     IFS = IFS*o.ExtractScale;
+                    
+                    %Determine auto thresholds
+                    o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
                 end
                 
-                %IFS = IFS+ 32767;
-                % tophat hack - potentially use for DAPI images. Do 2D
-                % tophat then smooth in 3D.
-                %SE = strel('disk', 35);
-                %IFS = imtophat(I,SE);
-                %IFS = IFS-60;
-                %SE2 = fspecial3('ellipsoid',[2,2,5]);
-                %IFS = imfilter(IFS,SE2);
-                %IFS = IFS*10;
+                
                 
                 %Append each z plane to same tiff image
                 for z = 1:o.nZ
@@ -177,6 +177,39 @@ function o = extract_and_filter(o)
     
     o.EmptyTiles = cellfun(@isempty, squeeze(o.TileFiles(o.ReferenceRound,:,:,1)))*0;
 
+    end
+    
+    %Plot boxplots showing distribution af AutoThresholds
+    if o.Graphics
+        Thresholds = [];
+        group = [];
+        index = 1;
+        for c=1:nChannels
+            for r=1:o.nRounds
+                Thresholds = [Thresholds;o.AutoThresh(:,c,r)];
+                group = [group;index*ones(size(o.AutoThresh(:,1,1)))];
+                index = index+1;
+            end
+        end
+        %Add anchor
+        Thresholds = [Thresholds;o.AutoThresh(:,o.AnchorChannel,o.ReferenceRound)];
+        group = [group;index*ones(size(o.AutoThresh(:,1,1)))];
+        
+        colors = colormap(lines(nChannels));
+        Colors = repelem(colors,o.nRounds,1);
+        Colors = [Colors;repelem([0,0,0],nChannels,1)];
+        figure(43290);
+        boxplot(Thresholds,group,'Colors',Colors, 'plotstyle', 'compact','labels', [string(repmat(1:o.nRounds,1,nChannels)),'Anchor']);
+        set(gca,'TickLength',[0 0])
+        ylabel('AutoThreshold');
+        xlabel('Round');
+        hold on
+        for c=1:nChannels
+            plot(NaN,1,'color', colors(c,:), 'LineWidth', 4);
+        end
+        leg = legend(o.bpLabels);
+        title(leg,'Color Channel');
+        hold off
     end
 end
 

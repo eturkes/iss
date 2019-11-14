@@ -23,7 +23,8 @@ o.DapiChannel = 1;
 o.AnchorChannel = 5;
 o.ReferenceRound = 8;
 o.TileSz = 2048;
-o.OutputDirectory = 'C:\Users\...\Experiment1\output';  
+o.OutputDirectory = 'C:\Users\...\Experiment1\output'; 
+o.bpLabels = {'0', '1', '2', '3','4','5','6'}; %order of bases
 
 %These specify the dimensions of the filter. R1 should be approximately the
 %size of the spot in the respective direction and R2 should be double this.
@@ -96,7 +97,6 @@ o.FindSpotsSearch.Z = -1:o.FindSpotsStep(3):1;
 
 o.PcDist = 5; 
 o.MinPCMatches = 50; 
-o.bpLabels = {'0', '1', '2', '3','4','5','6'}; %order of bases
 
 %run code
 o = o.find_spots2;
