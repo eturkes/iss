@@ -5,6 +5,9 @@ function [NewShift,Outliers] = AmendShifts(o,shifts,score,section)
 %For regiter.m, a set of shifts corresponds to a particular direction
 %(South or East).
 %For find_spots.m, a set of shifts corresponds to a particular round.
+%In z direction, shifts are often very similar hence outlier should be
+%found if difference to median more than an absolute value. This absolute
+%value is taken to be o.OutlierThresh.
 if strcmpi(section, 'FindSpots')
     AbsoluteMinScore = o.FindSpotsAbsoluteMinScore;
 elseif strcmpi(section, 'Register')
@@ -15,9 +18,10 @@ Outliers = zeros(size(shifts));
 AnomalousScores = score<o.OutlierMinScore;
 if max(AnomalousScores)>0
     warning('Looking at anomalous shifts');
-    AnomalousShift = max(isoutlier(shifts(:,1),'median','ThresholdFactor',o.OutlierThresh),...
-        isoutlier(shifts(:,2),'median','ThresholdFactor',o.OutlierThresh),...
-        isoutlier(shifts(:,3),'median','ThresholdFactor',o.OutlierThresh));
+    AnomalousShiftArray = cat(3,isoutlier(shifts(:,1),'median','ThresholdFactor',o.OutlierThresh)...
+        ,isoutlier(shifts(:,2),'median','ThresholdFactor',o.OutlierThresh)...
+        ,abs(shifts(:,3)-median(shifts(:,3)))>=o.OutlierThresh);
+    AnomalousShift = max(AnomalousShiftArray,[],3);
     AwfulScore = score < AbsoluteMinScore;
     for i=1:size(score,1)
         if min([AnomalousScores(i),AnomalousShift(i)+AwfulScore(i)])>0
