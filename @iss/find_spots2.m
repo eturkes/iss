@@ -120,7 +120,7 @@ for t=1:nTiles
             %else
             %    o.DetectionThresh = 900;
             %end
-            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1);
+            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1)-32768;
             %BaseIm = imfilter(BaseIm, SE);
             %o.MinThresh = max(mean(mean(BaseIm)));
             %o.DetectionThresh = 1.5*max(mean(mean(BaseIm)));
@@ -208,7 +208,7 @@ o.FindSpotsInfo.Outlier = OutlierShifts;
 
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ');
 
-o = o.PointCloudRegister_WithAnchor3DNoCA(AllBaseLocalYXZ, o.RawLocalYXZ, nTiles);
+o = o.PointCloudRegister_NoAnchor3DWithCA(AllBaseLocalYXZ, o.RawLocalYXZ, nTiles);
 
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ');
 %% decide which tile to read each spot off in each round. 
@@ -282,7 +282,7 @@ for t=1:nTiles
         for b=o.UseChannels              %No 0 as trying without using anchor
 
             
-            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1);
+            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1)-32768;
             
             if o.SmoothSize
                 %BaseImSm = imfilter(double(BaseIm), fspecial('disk', o.SmoothSize));
@@ -382,7 +382,7 @@ if o.Graphics ==2
                 x1 = max(1,x0 - plsz);
                 x2 = min(o.TileSz,x0 + plsz);
            
-                BaseIm = imread(o.TileFiles{r,yTile,xTile,o.FirstBaseChannel + b - 1}, z, 'PixelRegion', {[y1 y2], [x1 x2]});
+                BaseIm = imread(o.TileFiles{r,yTile,xTile,o.FirstBaseChannel + b - 1}, z, 'PixelRegion', {[y1 y2], [x1 x2]})-32768;
                 if o.SmoothSize
                     SE = fspecial3('ellipsoid',o.SmoothSize); 
                     BaseImSm = imfilter(BaseIm, SE);

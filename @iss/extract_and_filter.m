@@ -99,6 +99,8 @@ function o = extract_and_filter(o)
                     fprintf('Round %d tile %d already done.\n', r, t);
                     o.TilePosYXC(Index,:) = [TilePosYX(t,:),c];          %Think first Z plane is the highest
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
+                    IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-32768;
+                    o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
                     Index = Index+1;
                     continue;
                 elseif (r == o.ReferenceRound && c ~= o.AnchorChannel) && (r == o.ReferenceRound && c ~= o.DapiChannel)
@@ -157,6 +159,8 @@ function o = extract_and_filter(o)
                 
                 
                 %Append each z plane to same tiff image
+                %Add 2^16/2 so keep negative pixels for background analysis
+                IFS = IFS + 32768;
                 for z = 1:o.nZ
                     imwrite(uint16(IFS(:,:,z)),...  %Not sure if uint16 is correct, wasnt working without
                             fullfile(o.TileDirectory,...

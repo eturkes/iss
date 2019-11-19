@@ -41,7 +41,7 @@ for t=NonemptyTiles
     end 
     
     [y,x] = ind2sub([nY nX], t);
-    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel);
+    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel)-32768;
     if o.SmoothSize   
         SE = fspecial3('ellipsoid',o.SmoothSize);
         AnchorImSm = imfilter(AnchorIm, SE);
