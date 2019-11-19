@@ -208,7 +208,7 @@ o.FindSpotsInfo.Outlier = OutlierShifts;
 
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ');
 
-o = o.PointCloudRegister_NoAnchor3DNoCA(AllBaseLocalYXZ, o.RawLocalYXZ, nTiles);
+o = o.PointCloudRegister_WithAnchor3DNoCA(AllBaseLocalYXZ, o.RawLocalYXZ, nTiles);
 
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ');
 %% decide which tile to read each spot off in each round. 
@@ -221,7 +221,7 @@ save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYX
 %Compute approx new shifts in XY pixels, by taking the bottom row of the
 %transform R. Then convert z shift back to units of z pixels for origin
 %THIS PART NEEDS WORK - NOT SURE IT IS THAT CRUCIAL THOUGH
-XYPixelShifts = permute(squeeze(o.R(4,:,:,1:o.nRounds).*[1,1,o.XYpixelsize/o.Zpixelsize]),[2 1 3]);
+XYPixelShifts = permute(squeeze(o.A(4,:,:,1:o.nRounds,o.InitialShiftChannel).*[1,1,o.XYpixelsize/o.Zpixelsize]),[2 1 3]);
 o.TileOrigin(:,:,1:o.nRounds) =  o.TileOrigin(:,:,rr) - XYPixelShifts(:,:,1:o.nRounds);     
 
 ndRoundTile = nan(nnd,o.nRounds);
@@ -303,7 +303,7 @@ for t=1:nTiles
                     if o.nMatches(t,b,r)<o.MinPCMatches || isempty(o.nMatches(t,b,r))
                         continue;
                     end
-                    CenteredMyPointCorrectedYXZ = (CenteredScaledMyLocalYXZ*o.R(:,:,t,r));
+                    CenteredMyPointCorrectedYXZ = (CenteredScaledMyLocalYXZ*o.A(:,:,t,r,b));
                     MyPointCorrectedYXZ = round(CenteredMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize] + o.CentreCorrection);
                     ndPointCorrectedLocalYXZ(MyBaseSpots,:,r,b) = MyPointCorrectedYXZ;
                     ndSpotColors(MyBaseSpots,b,r) = IndexArrayNan(BaseImSm, MyPointCorrectedYXZ');
@@ -394,7 +394,7 @@ if o.Graphics ==2
                 imagesc([x1 x2], [y1 y2], BaseImSm); hold on
                 axis([x0-plsz, x0+plsz, y0-plsz, y0+plsz]);
                 plot(xlim, [y0 y0], 'w'); plot([x0 x0], ylim, 'w');
-                caxis([0 o.DetectionThresh*2]);
+                caxis([0 o.AutoThresh(t,b,r)*2]);
                 if r==1; ylabel(Ylegends{b}); end
                 colorbar;
                 
