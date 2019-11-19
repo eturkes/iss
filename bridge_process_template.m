@@ -38,6 +38,8 @@ o.DapiR1Z = 9;
 o.DapiR2YX = 40;
 o.DapiR2Z = 18;
 
+o.ExtractScale = 10;
+o.DapiScale = 10;
 
 %run code
 o = o.extract_and_filter;
@@ -49,16 +51,16 @@ save(fullfile(o.OutputDirectory, 'oExtract'), 'o', '-v7.3');
 
 %Anchor spots are detected in register2
 o.DetectionRadius=[2,1];    %[YX_radius, Z_radius]
-o.SmoothSize = [2,2,2];     %[Y_radius,X_radius,Z_radius]
+o.SmoothSize = 0;     %[Y_radius,X_radius,Z_radius]
 o.IsolationRadius1 = 4;
 o.IsolationRadius2 = [14,1];
 
-o.DetectionThresh = 500;
+o.DetectionThresh = 'auto';
 o.MinThresh = 10;
 o.minPeaks = 1;
 
 %Registration Search parameters
-o.RegMinScore = 30;     
+o.RegMinScore = 'auto';     
 o.RegStep = [5,5,2];
 o.RegSearch.South.Y = -1900:o.RegStep(1):-1800;
 o.RegSearch.South.X = -50:o.RegStep(2):50;
@@ -85,8 +87,8 @@ o.UseRounds = 1:o.nRounds;
 o.FirstBaseChannel = 1;
 
 %Search parameters
-o.InitialShiftChannel = 5;      %Channel to use to find initial shifts between rounds
-o.FindSpotsMinScore = 90;     
+o.InitialShiftChannel = 4;      %Channel to use to find initial shifts between rounds
+o.FindSpotsMinScore = 'auto';     
 o.FindSpotsStep = [5,5,2];
 %FindSpotsSearch can either be a 1x1 struct or a o.nRounds x 1 cell of
 %structs - have a different range for each round: 
@@ -96,7 +98,8 @@ o.FindSpotsSearch.X = -100:o.FindSpotsStep(2):100;
 o.FindSpotsSearch.Z = -1:o.FindSpotsStep(3):1;
 
 o.PcDist = 5; 
-o.MinPCMatches = 50; 
+o.MinPCMatches = 1; 
+
 
 %run code
 o = o.find_spots2;
@@ -107,7 +110,7 @@ save(fullfile(o.OutputDirectory, 'oFind_spots'), 'o', '-v7.3');
 %parameters
 %Codebook is a text file containing 2 columns - 1st is the gene name. 2nd is
 %the code, length o.nRounds and containing numbers in the range from 0 to o.nBP-1.
-o.CodeFile = 'C:\Users\...\Experiment1\codebook.txt';
+o.CodeFile = '\\zserver\Data\ISS\codebook_73gene_6channels_2col.txt';
 
 %run code
 o = o.call_spots;
@@ -115,7 +118,7 @@ save(fullfile(o.OutputDirectory, 'oCall_spots'), 'o', '-v7.3');
 
 %% plot results
 
-o.CombiQualThresh = 0.5;
+o.CombiQualThresh = 0.7;
 
 Roi = round([1, max(o.SpotGlobalYXZ(:,2)), ...
     1, max(o.SpotGlobalYXZ(:,1)),...
