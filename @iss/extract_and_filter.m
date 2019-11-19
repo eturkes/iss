@@ -46,7 +46,9 @@ function o = extract_and_filter(o)
         bfreader.close();
         
         if r == 1
-            o.AutoThresh = zeros(nSerieswPos,nChannels,o.nRounds+o.nExtraRounds);  
+            if isempty(o.AutoThresh)
+                o.AutoThresh = zeros(nSerieswPos,nChannels,o.nRounds+o.nExtraRounds);  
+            end
             
             % find x and y grid spacing as median of distances that are about
             % right
@@ -99,8 +101,10 @@ function o = extract_and_filter(o)
                     fprintf('Round %d tile %d already done.\n', r, t);
                     o.TilePosYXC(Index,:) = [TilePosYX(t,:),c];          %Think first Z plane is the highest
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
-                    IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-32768;
-                    o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
+                    if o.AutoThresh(t,c,r) == 0
+                        IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-32768;
+                        o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
+                    end
                     Index = Index+1;
                     continue;
                 elseif (r == o.ReferenceRound && c ~= o.AnchorChannel) && (r == o.ReferenceRound && c ~= o.DapiChannel)
