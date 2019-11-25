@@ -62,12 +62,12 @@ o.minPeaks = 1;
 %Registration Search parameters
 o.RegMinScore = 'auto';     
 o.RegStep = [5,5,2];
-o.RegSearch.South.Y = -1900:o.RegStep(1):-1800;
+o.RegSearch.South.Y = -1900:o.RegStep(1):-1700;
 o.RegSearch.South.X = -50:o.RegStep(2):50;
 o.RegSearch.South.Z = -2:o.RegStep(3):2;
 
 o.RegSearch.East.Y = -50:o.RegStep(1):50;
-o.RegSearch.East.X = -1900:o.RegStep(2):-1800;
+o.RegSearch.East.X = -1900:o.RegStep(2):-1700;
 o.RegSearch.East.Z = -2:o.RegStep(3):2;
 
 %run code
