@@ -34,7 +34,7 @@ end
 k = KDTreeSearcher(y);
 %Not sure about this but think its correct i.e. when transforming anchor, subtract its origin and add origin of new tile.
 
-xR = x*o.R(:,:,t2,r);        %Shift from anchor to round r
+xR = x*o.A(:,:,t2,r,b);        %Shift from anchor to round r
 %Then shift from tile t2 to tile t
 t2_to_t_shift = (o.TileOrigin(t,:,r) - o.TileOrigin(t2,:,r)).*[1,1,o.Zpixelsize/o.XYpixelsize];
 Final_x = xR + t2_to_t_shift;
@@ -46,7 +46,7 @@ UseMe = Dist<o.PcDist;
 nMatches = sum(UseMe);
 error = sqrt(mean(Dist(UseMe>0).^2));
 
-CenteredMyPointCorrectedYXZ = CenteredMyLocalYXZ*o.R(:,:,t2,r) + t2_to_t_shift;
+CenteredMyPointCorrectedYXZ = CenteredMyLocalYXZ*o.A(:,:,t2,r,b) + t2_to_t_shift;
 MyPointCorrectedYXZ = round(CenteredMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize] + o.CentreCorrection);
 
 return
