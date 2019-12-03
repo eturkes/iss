@@ -28,10 +28,8 @@ o.bpLabels = {'0', '1', '2', '3','4','5','6'}; %order of bases
 
 %These specify the dimensions of the filter. R1 should be approximately the
 %size of the spot in the respective direction and R2 should be double this.
-o.ExtractR1YX = 3;
-o.ExtractR1Z = 3;
-o.ExtractR2YX = 6;
-o.ExtractR2Z = 6;
+o.ExtractR1 = 3;
+o.ExtractR2 = 25;
 
 o.DapiR1YX = 20;
 o.DapiR1Z = 9;

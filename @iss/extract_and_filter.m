@@ -5,9 +5,10 @@ function o = extract_and_filter(o)
     o.TileFiles = cell(o.nRounds+o.nExtraRounds,1,1,1); % 1,1,1 because we don't yet know how many tiles
     
     %New filter
-    h = -hanning(51);
+    h = -hanning(o.ExtractR2*2+1);
     h = -h/sum(h);
-    h(26-3:26+3) = h(26-3:26+3)+hanning(7)/sum(hanning(7));
+    h(o.ExtractR2+1-o.ExtractR1:o.ExtractR2+1+o.ExtractR1) = ...
+        h(o.ExtractR2+1-o.ExtractR1:o.ExtractR2+1+o.ExtractR1)+hanning(o.ExtractR1*2+1)/sum(hanning(o.ExtractR1*2+1));
     SE = ftrans2(h');
 %     h2D = ftrans2(h');
 %     hzdirection = hanning(3);

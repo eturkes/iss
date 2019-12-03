@@ -56,12 +56,9 @@ classdef iss
         % which it is positive and outer radius ExtractR2 so the annulus between 
         % R1 and R2 is negative. Overall sums up to 0. R1 should be the
         % approximate radius of spot. R2 should be such that between 
-        % R1 and R2 there is a dark region - good guess is double R1.
-        % RYX has units of YX pixels, RZ has units of Z pixels.
-        ExtractR1YX = 5;
-        ExtractR1Z = 5;
-        ExtractR2YX = 10;
-        ExtractR2Z = 10;
+        % R1 and R2 there is a dark region.
+        ExtractR1 = 3;
+        ExtractR2 = 25;
         
         % DapiR is the same as above but is applied to the Dapi image so
         % should be the size of the Dapi spots. HAVN'T CHECKED THE FILTER
