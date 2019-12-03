@@ -98,18 +98,18 @@ function o = extract_and_filter(o)
                 fName{Index} = fullfile(o.TileDirectory, ...
                     [o.FileBase{r}, '_t', num2str(t),'c', num2str(c), '.tif']);  
                 
-                if (r == o.ReferenceRound && c ~= o.AnchorChannel) && (r == o.ReferenceRound && c ~= o.DapiChannel)
-                    %Only need anchor and dapi tiles in reference round
-                    continue;
-                elseif exist(fName{Index}, 'file')
+                if exist(fName{Index}, 'file')
                     fprintf('Round %d tile %d already done.\n', r, t);
                     o.TilePosYXC(Index,:) = [TilePosYX(t,:),c];          %Think first Z plane is the highest
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
-                    if o.AutoThresh(t,c,r) == 0
+                    if o.AutoThresh(t,c,r) == 0 && c ~= o.DapiChannel && r ~= o.ReferenceRound  
                         IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
                         o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
                     end
                     Index = Index+1;
+                    continue;
+                elseif (r == o.ReferenceRound && c ~= o.AnchorChannel) && (r == o.ReferenceRound && c ~= o.DapiChannel)
+                    %Only need anchor and dapi tiles in reference round
                     continue;
                 end
                                                                         
