@@ -79,6 +79,11 @@ classdef iss
         ExtractScale = 10;
         %ExtractScale = 5*10^7;
         
+        % TilePixelValueShift is added onto every tile when it is saved and 
+        % removed from every tile when loaded so we can have negative pixel 
+        % values. Saves as uint16 so default is 2^16/2.
+        TilePixelValueShift = 32768;
+        
         % Dapi has different scaling as different filter used.
         DapiScale = 'auto';
         
@@ -136,6 +141,12 @@ classdef iss
         %sum(exp(-Dist.^2/(2*o.ShiftScoreThresh^2)))
         ShiftScoreThresh = 2;
         
+        % If either RegMinScore or FindSpotsMinScore are set to 'auto', 
+        % the minimum allowed score before the search range is enlarged
+        % will be set to median + InitalShiftAutoMinScoreParam*IQR
+        % of search scores.
+        InitalShiftAutoMinScoreParam = 5;
+        
         %RegSearch.Direction.Y,RegSearch.Direction.X,RegSearch.Direction.Z 
         %(.Z in Z pixel units) are the ranges values of
         %shifts to check during the registration to the neighbour in the corresponding
@@ -147,8 +158,8 @@ classdef iss
         RegStep = [5,5,2];
         
         %if the score mentioned above is below RegMinScore, the search
-        %range will be enlarged. If set to 'auto', will be set to median + 5*IQR
-        %of search scores.
+        %range will be enlarged. If set to 'auto', will be set to median + 
+        %InitalShiftAutoMinScoreParam*IQR of search scores.
         RegMinScore = 'auto';
         
         %RegWidenSearch specifies how much to widen the search range in the

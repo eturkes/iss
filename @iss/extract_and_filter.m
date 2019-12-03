@@ -164,7 +164,7 @@ function o = extract_and_filter(o)
                 
                 %Append each z plane to same tiff image
                 %Add 2^16/2 so keep negative pixels for background analysis
-                IFS = IFS + 32768;
+                IFS = IFS + o.TilePixelValueShift;
                 for z = 1:o.nZ
                     imwrite(uint16(IFS(:,:,z)),...  %Not sure if uint16 is correct, wasnt working without
                             fullfile(o.TileDirectory,...

@@ -53,7 +53,7 @@ BestShift = shifts(Score == BestScore,:);
 ChangedSearchRange = 0;
 
 if strcmpi('auto',MinScore)
-    MinScore = median(Score)+5*iqr(Score);
+    MinScore = median(Score)+o.InitalShiftAutoMinScoreParam*iqr(Score);
 end
 
 %if maxima below MinScore, widen search
