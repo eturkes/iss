@@ -204,10 +204,10 @@ function o = extract_and_filter(o)
         Thresholds = [Thresholds;o.AutoThresh(:,o.AnchorChannel,o.ReferenceRound)];
         group = [group;index*ones(size(o.AutoThresh(:,1,1)))];
         
+        figure(43290);
         colors = colormap(lines(nChannels));
         Colors = repelem(colors,o.nRounds,1);
-        Colors = [Colors;repelem([0,0,0],nChannels,1)];
-        figure(43290);
+        Colors = [Colors;repelem([0,0,0],nChannels,1)];        
         boxplot(Thresholds,group,'Colors',Colors, 'plotstyle', 'compact','labels', [string(repmat(1:o.nRounds,1,nChannels)),'Anchor']);
         set(gca,'TickLength',[0 0])
         ylabel('AutoThreshold');
