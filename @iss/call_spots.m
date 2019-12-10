@@ -40,7 +40,7 @@ nRounds = size(o.UseRounds,2);
 %o.SpotGlobalYX = o.SpotGlobalYX(Bad==0,:);
 
 SpotColors = bsxfun(@rdivide, o.cSpotColors, prctile(o.cSpotColors, o.SpotNormPrctile));
-
+%SpotColors = o.cSpotColors;
 % now we cluster the intensity vectors to estimate the Bleed Matrix
 BleedMatrix = zeros(nChans,nChans,nRounds); % (Measured, Real, Round)
 if strcmpi(o.BleedMatrixType,'Separate')
@@ -175,6 +175,14 @@ else
     NormFlatSpotColors = bsxfun(@rdivide, FlatSpotColors, o.SpotIntensity);
 
     SpotScores = NormFlatSpotColors * NormBledCodes';
+end
+
+%Store deviation in spot scores - can rule out matches based on a low
+%deviation.
+nSpots = size(SpotScores,1);
+o.SpotScoreDev = zeros(nSpots,1);
+for s=1:nSpots
+    o.SpotScoreDev(s) = std(SpotScores(s,:));
 end
 
 [o.SpotScore, BestCode] = max(SpotScores,[],2);

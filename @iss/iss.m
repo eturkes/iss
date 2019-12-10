@@ -293,8 +293,9 @@ classdef iss
         BleedMatrixType = 'Single';
         
         % score and intensity thresholds to plot a spot (combi codes)
-        CombiQualThresh = .8;         
+        CombiQualThresh = .7;         
         CombiIntensityThresh = .1;
+        CombiDevThresh = 0.07;
         CombiAnchorsReq = 4; % need at least this many anchor chans above threshold
         
         nRedundantRounds = 0;
@@ -544,6 +545,10 @@ classdef iss
         % SpotIntensity(Spot): RMS intensity of the spot. Zero for
         % extras!
         SpotIntensity;
+        
+        % SpotScoreDev is the standard deviation of that spots score to all
+        % genes
+        SpotScoreDev;
         
         % CharCodes{Code}: text representation of each code in the
         % codebook. For extra spots, this just says "EXTRA"

@@ -3,7 +3,7 @@ function QualOK = quality_threshold(o)
 % quick function that returns a binary saying which spots are above quality
 % threshold
 
-QualOK = (o.SpotCombi & o.SpotScore>o.CombiQualThresh & o.SpotIntensity>o.CombiIntensityThresh);
+QualOK = (o.SpotCombi & o.SpotScore>o.CombiQualThresh & o.SpotIntensity>o.CombiIntensityThresh & o.SpotScoreDev>o.CombiDevThresh);
 
 % % HACK ALERT
 % QualOK = QualOK & o.cSpotIsolated;
