@@ -88,7 +88,8 @@ if o.Graphics
 % %     colorbar
 end
 
-o.BleedMatrix = BleedMatrix;
+o.BleedMatrix = NormBleedMatrix;
+o.pBleedMatrix = BleedMatrix;
 
 %% Get BledCodes for each gene
 % now load in the code book and apply bleeds to it
