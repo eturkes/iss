@@ -88,7 +88,8 @@ if o.Graphics
 % %     colorbar
 end
 
-o.BleedMatrix = BleedMatrix;
+o.BleedMatrix = NormBleedMatrix;
+o.pBleedMatrix = BleedMatrix;
 
 %Load in anchor channel for each gene
 GeneAnchorChannelInfo = load(o.GeneAnchorChannelFile);

@@ -589,7 +589,8 @@ classdef iss
         NormBledCodes;
         cNormSpotColors;
         
-        % BleedMatrix used to estimate BledCodes
+        % BleedMatrix used to estimate BledCodes in call_spots. Normalised
+        % by percentiles in each round and channel.
         BleedMatrix;
         
         
@@ -609,6 +610,9 @@ classdef iss
         CellYX;
         
         %% parameters: Probability Method for spot calling
+        % BleedMatrix used to estimate BledCodes in call_spots_prob. Unnormalised.
+        pBleedMatrix;
+        
         %HistCounts(:,b,r) is the pixel count corresponding to each value
         %in HistValues for channel b, round r
         HistCounts;

@@ -35,12 +35,12 @@ function SpotNo = iss_view_codes(o, FigNo, Norm, SpotNum)
         cBledCodes = o.NormBledCodes;
     elseif Norm == 3
         cSpotColors = o.cSpotColors;
-        NewBleedMatrix = o.BleedMatrix;
+        NewBleedMatrix = o.pBleedMatrix;
         for b = 1:o.nBP
             bSpotColors = o.cSpotColors(:,b,:);
             p = prctile(bSpotColors(:), o.SpotNormPrctile);
             cSpotColors(:,b,:) = cSpotColors(:,b,:)/p;
-            NewBleedMatrix(b,:,:) = o.BleedMatrix(b,:,:)/p;                        
+            NewBleedMatrix(b,:,:) = o.pBleedMatrix(b,:,:)/p;                        
         end
         cBledCodes = change_bled_codes(o,NewBleedMatrix);
     end

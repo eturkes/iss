@@ -41,8 +41,8 @@ nRounds = size(o.UseRounds,2);
 %o.cSpotColors = o.cSpotColors(Bad==0,:,:);
 %o.cSpotIsolated = o.cSpotIsolated(Bad==0);
 %o.SpotGlobalYX = o.SpotGlobalYX(Bad==0,:);
-
-SpotColors = bsxfun(@rdivide, o.cSpotColors, prctile(o.cSpotColors, o.SpotNormPrctile));
+p = prctile(o.cSpotColors, o.SpotNormPrctile);
+SpotColors = bsxfun(@rdivide, o.cSpotColors, p);
 
 % now we cluster the intensity vectors to estimate the Bleed Matrix
 BleedMatrix = zeros(nChans,nChans,nRounds); % (Measured, Real, Round)
@@ -95,6 +95,14 @@ if o.Graphics
 end
 
 o.BleedMatrix = BleedMatrix;
+
+%Save unnormalised BleedMatrix too
+o.pBleedMatrix = zeros(nChans,nChans,nRounds);
+for r=1:o.nRounds
+    for b=1:o.nBP
+        o.pBleedMatrix(b,:,r) = p(:,b,r)*BleedMatrix(b,:,r);
+    end
+end
 
 %Load in anchor channel for each gene
 GeneAnchorChannelInfo = load(o.GeneAnchorChannelFile);
