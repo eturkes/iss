@@ -117,14 +117,17 @@ save(fullfile(o.OutputDirectory, 'oFind_spots'), 'o', '-v7.3');
 %Codebook is a text file containing 2 columns - 1st is the gene name. 2nd is
 %the code, length o.nRounds and containing numbers in the range from 0 to o.nBP-1.
 o.CodeFile = '\\zserver\Data\ISS\codebook_73gene_6channels_2col.txt';
+o.GeneAnchorChannelFile = "...\GeneSplitAnchorChannel.mat";
 
 %run code
 o = o.call_spots;
+o = o.call_spots_prob;
+
 save(fullfile(o.OutputDirectory, 'oCall_spots'), 'o', '-v7.3');
 
 %% plot results
 
-o.CombiQualThresh = 0.7;
+o.CombiQualThresh = 4;
 
 Roi = round([1, max(o.SpotGlobalYXZ(:,2)), ...
     1, max(o.SpotGlobalYXZ(:,1)),...
@@ -134,7 +137,18 @@ for z = Roi(5):Roi(6)
     BackgroundImage(:,:,z-Roi(5)+1) = imread(o.BigDapiFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
 end
 
-o.plot3D(BackgroundImage);
+ZThick=0;           %See all spots from ZPlane+/- ZThick on single plane
+S = o.plot3D(BackgroundImage,ZThick);       %plot from call_spots
 
-%iss_view_codes(o,93754);
+%Can interactively change plot by changing o or S.ZThick and then running
+%iss_change_plot(o,'CallSpotsMethod')
+
+%o.pScoreThresh = 10;
+%iss_change_plot(o,'prob');             %plot from call_spots_prob
+
+%Norm = 1;                      %Different normalisations for Norm=1,2,3
+%iss_view_codes(o,93454,Norm);     %See result from call_spots
+%iss_view_prob(o,93454,Norm);     %See result from call_spots_prob
+
+%iss_change_plot(o,'DotProduct');       %change back to call_spots method
 

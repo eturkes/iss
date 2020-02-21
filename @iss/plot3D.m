@@ -1,4 +1,4 @@
-function plot3D(o, BackgroundImageFile, ZThick, Roi)
+function S = plot3D(o, BackgroundImageFile, ZThick, Roi)
 % o.plot(BackgroundImage, Roi)
 %
 % plot the results of in situ sequencing spot detection. 
@@ -65,7 +65,7 @@ end
 
 
 
-
+S.FigNo = 93454;
 S.fh = figure(93454);set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
 set(gcf, 'color', 'k');
 set(gca, 'color', 'k');
@@ -91,6 +91,7 @@ S.QualOK = o.quality_threshold;
 S.SpotYXZ = o.SpotGlobalYXZ;
 %S.Roi is the Roi for the current Z plane
 S.Roi = [Roi(1:4),S.MinZ-S.ZThick,S.MinZ+S.ZThick];
+S.ZRange = Roi(6)-Roi(5);
 InRoi = all(int64(round(S.SpotYXZ))>=S.Roi([3 1 5]) & round(S.SpotYXZ)<=S.Roi([4 2 6]),2);
 PlotSpots = find(InRoi & S.QualOK);
 [~, S.GeneNo] = ismember(S.SpotGeneName(PlotSpots), S.uGenes);
@@ -119,12 +120,13 @@ else
 end
 
 assignin('base','issPlot3DZPlane',S.MinZ)
+assignin('base','issPlot3DObject',S)
 
 S.sl = uicontrol('style','slide',...
                  'unit','pix',...
                  'position',[60 8 693 18],...
-                 'min',1,'max',Roi(6)-Roi(5)+1,'val',1,...
-                 'sliderstep',[1/(Roi(6)-Roi(5)) 1/(Roi(6)-Roi(5))],...
+                 'min',1,'max',S.ZRange+1,'val',1,...
+                 'sliderstep',[1/S.ZRange 1/S.ZRange],...
                  'callback',{@sl_call,S});  
 set( findall( S.fh, '-property', 'Units' ), 'Units', 'Normalized' )
 
@@ -134,7 +136,8 @@ set( findall( S.fh, '-property', 'Units' ), 'Units', 'Normalized' )
 
 function [] = sl_call(varargin)
 % Callback for the slider.
-[h,S] = varargin{[1,3]};  % calling handle and data structure.
+[h,~] = varargin{[1,3]};  % calling handle and data structure.
+S = evalin('base', 'issPlot3DObject');  %Take S from workspace so can use iss_change_plot
 ZPlane = round(get(h,'value'))+S.MinZ-1;
 S.Background = imagesc(S.Image(:,:,ZPlane-S.MinZ+1)); hold on; colormap bone;
 %set(S.Background, 'XData', [S.Roi(3), S.Roi(4)]);
@@ -178,6 +181,8 @@ end
 
 %Update current Z position in woprkspace so can use for iss_view_codes
 assignin('base','issPlot3DZPlane',ZPlane)
+assignin('base','issPlot3DObject',S)
+
 
 
 

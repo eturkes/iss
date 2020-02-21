@@ -1,11 +1,10 @@
-function QualOK = quality_threshold(o)
+function QualOK = quality_threshold_prob(o)
 % QualOK = o.quality_threshold
 % quick function that returns a binary saying which spots are above quality
-% threshold.
-% If are using split channels, also ensures all spots detected on correct
-% anchor channel.
+% threshold
 
-QualOK = (o.SpotCombi & o.SpotScore>o.CombiQualThresh & o.SpotIntensity>o.CombiIntensityThresh & o.SpotScoreDev>o.CombiDevThresh);
+QualOK = (o.pSpotScore>o.pScoreThresh | ...
+o.pSpotIntensity>o.pIntensityThresh & o.pLogProb>o.pLogProbThresh & o.pSpotScore+o.pSpotScoreDev>o.pDevThresh);
 
 %Ensure spot was detected on correct channel
 if ~isempty(o.cSpotAnchorChannel)

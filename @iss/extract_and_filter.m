@@ -10,6 +10,7 @@ function o = extract_and_filter(o)
     h(o.ExtractR2+1-o.ExtractR1:o.ExtractR2+1+o.ExtractR1) = ...
         h(o.ExtractR2+1-o.ExtractR1:o.ExtractR2+1+o.ExtractR1)+hanning(o.ExtractR1*2+1)/sum(hanning(o.ExtractR1*2+1));
     SE = ftrans2(h');
+    SE = single(gpuArray(SE));
 %     h2D = ftrans2(h');
 %     hzdirection = hanning(3);
 %     hzdirection = reshape(hzdirection,[1,1,3]);
@@ -21,7 +22,7 @@ function o = extract_and_filter(o)
     end
     
     
-    for r = 1:o.nRounds+o.nExtraRounds    
+    for r = 1:o.nRounds+o.nExtraRounds   
         imfile = fullfile(o.InputDirectory, [o.FileBase{r}, o.RawFileExtension]);
 
         % construct a Bio-Formats reader with the Memoizer wrapper
@@ -54,6 +55,10 @@ function o = extract_and_filter(o)
         if r == 1
             if isempty(o.AutoThresh)
                 o.AutoThresh = zeros(nSerieswPos,nChannels,o.nRounds+o.nExtraRounds);  
+            end
+            if isempty(o.HistCounts)
+                o.HistValues = -o.TilePixelValueShift:1:2^16-o.TilePixelValueShift;  %Entire range of possible pixel values
+                o.HistCounts = zeros(length(o.HistValues),nChannels,o.nRounds);
             end
             
             % find x and y grid spacing as median of distances that are about
@@ -90,7 +95,7 @@ function o = extract_and_filter(o)
         
         Index = 1;
         %parfor t = 1:nSerieswPos  
-        for t = 1:nSerieswPos 
+        for t = 1:nSerieswPos  
                        
             % a new reader per worker
             bfreader = javaObject('loci.formats.Memoizer', bfGetReader(), 0);
@@ -104,13 +109,16 @@ function o = extract_and_filter(o)
                     [o.FileBase{r}, '_t', num2str(t),'c', num2str(c), '.tif']);  
                 
                 if exist(fName{Index}, 'file')
-                    fprintf('Round %d tile %d already done.\n', r, t);
+                    fprintf('Round %d, tile %d, channel %d already done.\n', r, t, c);
                     o.TilePosYXC(Index,:) = [TilePosYX(t,:),c];          %Think first Z plane is the highest
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
                     if o.AutoThresh(t,c,r) == 0
                         if c == o.DapiChannel && r == o.ReferenceRound; continue; end
                         IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
                         o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
+                        if r~= o.ReferenceRound
+                            o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+histc(IFS(:),o.HistValues);
+                        end
                     end
                     Index = Index+1;
                     continue;
@@ -128,7 +136,7 @@ function o = extract_and_filter(o)
 %                         SE = get_3DSE(o.ExtractR1YX,o.ExtractR1Z,o.ExtractR2YX,o.ExtractR2Z);
 %                 end
 
-                I = zeros(o.TileSz,o.TileSz,o.nZ); 
+                I = zeros(o.TileSz,o.TileSz,o.nZ,'gpuArray'); 
                 for z = 1:o.nZ
                     iPlane = bfreader.getIndex(z-1, c-1, 0)+1;
                     I(:,:,z) = bfGetPlane(bfreader, iPlane);
@@ -146,38 +154,47 @@ function o = extract_and_filter(o)
                 %IFS = ifftn(Final_FT);
                 
                 %I = ifftn(Norm_FT);
-                I = padarray(I,(size(SE)-1)/2,'replicate','both');
-                IFS = convn(I,SE,'valid');    
+                I = single(padarray(I,(size(SE)-1)/2,'replicate','both'));
+                IFS = convn(I,SE,'valid'); 
+                clearvars I  %Free up GPU memory
                 
                 %Scaling so fills uint16 range.
                 if c == o.DapiChannel && r == o.ReferenceRound  
                     if strcmpi(o.DapiScale, 'auto')
-                        o.DapiScale = 10000/max(max(max(IFS)));
+                        o.DapiScale = 10000/max(IFS(:));
                     end
                     IFS = IFS*o.DapiScale;
                 else
                     %Finds o.ExtractScale from first image and uses this
                     %value for the rest
                     if strcmpi(o.ExtractScale, 'auto')
-                        o.ExtractScale = 10000/max(max(max(IFS)));
+                        o.ExtractScale = 10000/max(IFS(:));
                     end
                     IFS = IFS*o.ExtractScale;
                     
                     %Determine auto thresholds
-                    o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
+                    o.AutoThresh(t,c,r) = gather(median(abs(IFS(:)))*o.AutoThreshMultiplier);
                 end
                 
+                if r ~= o.ReferenceRound  
+                    %Get histogram data
+                    IFS = int16(IFS);
+                    %AbridgedBaseIm = IFS(:,:,8:15);
+                    o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+gather(histc(IFS(:),o.HistValues));
+                end
                 
                 
                 %Append each z plane to same tiff image
                 %Add o.TilePixelValueShift so keep negative pixels for background analysis
-                IFS = IFS + o.TilePixelValueShift;
+                IFS = gather(uint16(IFS+o.TilePixelValueShift));   
+                %IFS = uint16(IFS + o.TilePixelValueShift);
                 for z = 1:o.nZ
-                    imwrite(uint16(IFS(:,:,z)),... 
+                    imwrite(IFS(:,:,z),... 
                             fullfile(o.TileDirectory,...
                             [o.FileBase{r}, '_t', num2str(t),'c', num2str(c), '.tif']),...
                             'tiff', 'writemode', 'append');
                 end
+                
 
                 o.TilePosYXC(Index,:) = [TilePosYX(t,:),c];          %Think first Z plane is the highest
                 o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
@@ -239,13 +256,23 @@ function o = extract_and_filter(o)
         title(leg,'Color Channel');
         hold off
     end
-end
-
-function SE = get_3DSE(r1YX,r1Z,r2YX,r2Z)
-    % structuring element for convlolution filtering
-    % Positive inner circle radius r1 and negative outer annulus radius r2. Overall sums to
-    % zero. 
-    SE = zeros(r2YX*2+1,r2YX*2+1,r2Z*2+1);
-    SE(r2YX+1-r1YX:r2YX+1+r1YX,r2YX+1-r1YX:r2YX+1+r1YX,r2Z+1-r1Z:r2Z+1+r1Z) = fspecial3('ellipsoid',[r1YX,r1YX,r1Z]);
-    SE = SE - fspecial3('ellipsoid',[r2YX,r2YX,r2Z]);
+    
+    %Plot histograms to make sure they are smooth
+    if o.Graphics       
+        figure(43291);
+        index = 1;
+        for r=1:o.nRounds
+            for b=1:nChannels
+                subplot(o.nRounds,nChannels,index)
+                histogram('BinEdges',[o.HistValues-0.5,max(o.HistValues)+0.5],'BinCounts',o.HistCounts(:,b,r),'DisplayStyle','stairs');
+                xlim([-1000,1000]);
+                ylim([0,max(o.HistCounts(:,b,r))]);
+                if b==4
+                    title(strcat('Round ',num2str(r)));
+                end
+                index = index+1;
+            end
+        end
+    end
+    
 end
