@@ -19,7 +19,7 @@ function o = extract_and_filter(o)
     AnchorChannelsToUse = [o.DapiChannel,o.AnchorChannel];
     
     
-    for r = 1:o.nRounds+o.nExtraRounds   
+    for r = 1:o.nRounds+o.nExtraRounds
         imfile = fullfile(o.InputDirectory, [o.FileBase{r}, o.RawFileExtension]);
 
         % construct a Bio-Formats reader with the Memoizer wrapper
@@ -111,10 +111,10 @@ function o = extract_and_filter(o)
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
                     if o.AutoThresh(t,c,r) == 0
                         if c == o.DapiChannel && r == o.ReferenceRound; continue; end
-                        IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
-                        o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
+                        IFS = o.load_3D_GPU(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
+                        o.AutoThresh(t,c,r) = gather(median(abs(IFS(:)))*o.AutoThreshMultiplier);
                         if r~= o.ReferenceRound
-                            o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+histc(IFS(:),o.HistValues);
+                            o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+gather(histc(IFS(:),o.HistValues));
                         end
                     end
                     Index = Index+1;
