@@ -192,8 +192,9 @@ classdef iss
         
         %% parameters: spot detection
         
-        % smooth images before reading out fluorescence with a disk of this radius:
-        SmoothSize = 1;
+        % smooth images before reading out fluorescence with a disk of radius [Ry,Rx,Rz]
+        % Set to 0 to not smooth
+        SmoothSize = 0;
         
         % to detect spot, pixel needs to be above dilation with this radius
         DetectionRadius = 1;
