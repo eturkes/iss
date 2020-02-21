@@ -97,8 +97,8 @@ end
 o.BleedMatrix = BleedMatrix;
 
 %Load in anchor channel for each gene
-%GeneAnchorChannelInfo = load(o.GeneAnchorChannelFile);
-%o.GeneAnchorChannel =  GeneAnchorChannelInfo.T.Channel+1;
+GeneAnchorChannelInfo = load(o.GeneAnchorChannelFile);
+o.GeneAnchorChannel =  GeneAnchorChannelInfo.T.Channel+1;
 
 % now load in the code book and apply bleeds to it
 %codebook_raw = importdata(o.CodeFile);
