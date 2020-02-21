@@ -293,9 +293,9 @@ classdef iss
         BleedMatrixType = 'Single';
         
         % score and intensity thresholds to plot a spot (combi codes)
-        CombiQualThresh = 4;         
+        CombiQualThresh = .7;         
         CombiIntensityThresh = .1;
-        CombiDevThresh = 0.3;
+        CombiDevThresh = 0.07;
         CombiAnchorsReq = 4; % need at least this many anchor chans above threshold
         
         nRedundantRounds = 0;
@@ -586,6 +586,81 @@ classdef iss
         
         % position of each cell centroid
         CellYX;
+        
+        %% parameters: Probability Method for spot calling
+        %HistCounts(:,b,r) is the pixel count corresponding to each value
+        %in HistValues for channel b, round r
+        HistCounts;
+        
+        %HistValues: The full range of pixel values;
+        HistValues;
+        
+        % pBledCodes(nCodes, nBP*nRounds): code vectors after modeling
+        % crosstalk and un-nomalising.
+        pBledCodes;
+        
+        %alpha is used for regularisation so don't have any bins with -Inf
+        %log probability.
+        alpha = 1e-20;
+        
+        %HistProbs(:,b,r) is the probability corresponding to each value
+        %in HistValues for channel b, round r.
+        %(HistCounts/nPixels+o.alpha)./(1+nBins*o.alpha);
+        HistProbs;
+        
+        %RaylConst is the constant used in the rayleigh distribution for
+        %the estimated distribution of lambda such that cSpotColors =
+        %Lambda*pBledCode
+        RaylConst = 1.0688;
+        
+        %ExpConst is same as above but exponenital distribution used for
+        %all rounds/channels that don't appear in CharCode for each gene.
+        ExpConst = 3.5;
+        
+        %LambdaDist(:,g,b,r) is the probability distribution of lambda for
+        %gene g, channel b and round r. Rayleigh if appear in CharCodes,
+        %Exp otherwise using constants above.
+        LambdaDist;
+        
+        %ZeroIndex is the index of the 0 value in
+        %min(cSpotColors(:)):max(cSpotColors(:)) used for convolutions.
+        %Needed to find values in lookup table.
+        ZeroIndex;        
+        
+        %pIntensityThresh is the value pSpotIntensity(s) needs to exceed for spot s
+        %to count
+        pIntensityThresh = 100;
+        
+        %pLogProbThresh is the value pSpotIntensity(s) needs to exceed for spot s
+        %to count
+        pLogProbThresh = -600;
+        
+        %pScoreThresh is the value pSpotScore(s) needs to exceed for spot s
+        %to count
+        pScoreThresh = 10;       
+        
+        %A spot must have pSpotScore(s)+pSpotScoreDev(s) > pDevThresh to
+        %count - avoid spots with similar score to all genes.
+        pDevThresh = 6;
+        
+        
+        %% variables: spot calling outputs
+        %pSpotIntensity is the modified spot intensity given by
+        %get_spot_intensity.m
+        pSpotIntensity;
+        
+        %pLogProb is sum(ln(Prob(b,r))) i.e. log(total probability)
+        pLogProb;        
+        
+        %pSpotScore is pLogProb -max(pLogProb(SpotCodeNo~=pSpotCodeNo))
+        pSpotScore;
+        
+        %pSpotScoreDev(s) is the standard deviation of the log prob of spot s
+        %for all genes
+        pSpotScoreDev;
+        
+        %pSpotCodeNo is the gene found for each spot
+        pSpotCodeNo;
         
         
     end

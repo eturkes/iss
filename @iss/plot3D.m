@@ -1,5 +1,5 @@
-function plot3D(o, BackgroundImageFile, ZThick, Roi)
-% o.plot(BackgroundImage, ZThick, Roi)
+function S = plot3D(o, BackgroundImageFile, ZThick, Roi)
+% o.plot(BackgroundImage, Roi)
 %
 % plot the results of in situ sequencing spot detection. 
 % SpotYX gives coordinates; Gene is a list of strings; 
@@ -9,12 +9,11 @@ function plot3D(o, BackgroundImageFile, ZThick, Roi)
 % If it is a numerical array, that is plotted (not subsetted for ROI)
 % If zero, nothing is plotted
 %
-% All spots within +/- ZThick of the current Z plane will be shown on that
-% Z plane. Default is inf - which means plot everything
-%
 % Roi = [xmin xmax ymin ymax zmin zmax] shows only this part. Whole thing
 % shown if empty or missing. Must be integers, xmin and ymin must be 1
 %
+% All spots within +/- ZThick of the current Z plane will be shown on that
+% Z plane. Default is 0
 %
 % sizes can be a vector or a scalar - only used for scatter, which isn't
 % called anyway.
@@ -23,7 +22,7 @@ function plot3D(o, BackgroundImageFile, ZThick, Roi)
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 if nargin<3 || isempty(ZThick)
-    S.ZThick = inf;
+    S.ZThick = 0;
 else
     S.ZThick = ZThick;
 end
@@ -66,25 +65,21 @@ end
 
 
 
-
-S.fh = figure(93754); 
-clf; 
-
-set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
+S.FigNo = 93454;
+S.fh = figure(93454);set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
 set(gcf, 'color', 'k');
 set(gca, 'color', 'k');
 
 S.Image = Image3D;
-%S.Background = imagesc(S.Image(:,:,1)); hold on; colormap bone;
+S.Background = imagesc(S.Image(:,:,1)); hold on; colormap bone;
 %set(S.Background, 'XData', [Roi(3), Roi(4)]);
 %set(S.Background, 'YData', [Roi(1), Roi(2)]);
 xlim([Roi(1) Roi(2)]);
 ylim([Roi(3) Roi(4)]);
 S.MinZ = Roi(5);
-S.HalfZ = floor((Roi(5)+Roi(6))/2);
 
-S.Background = imagesc(S.Image(:,:,S.HalfZ-S.MinZ+1)); hold on; colormap bone;
-title(['Z Plane ' num2str(S.HalfZ)],'Color','w');
+title(['Z Plane ' num2str(S.MinZ)],'Color','w');
+
 
 set(gca, 'YDir', 'normal');
 %axis on
@@ -94,8 +89,9 @@ S.uGenes = unique(S.SpotGeneName);
 % which ones pass quality threshold (combi first)
 S.QualOK = o.quality_threshold;
 S.SpotYXZ = o.SpotGlobalYXZ;
-%S.Roi is the Roi for the initial Z plane
-S.Roi = [Roi(1:4),S.HalfZ-S.ZThick,S.HalfZ+S.ZThick];
+%S.Roi is the Roi for the current Z plane
+S.Roi = [Roi(1:4),S.MinZ-S.ZThick,S.MinZ+S.ZThick];
+S.ZRange = Roi(6)-Roi(5);
 InRoi = all(int64(round(S.SpotYXZ))>=S.Roi([3 1 5]) & round(S.SpotYXZ)<=S.Roi([4 2 6]),2);
 PlotSpots = find(InRoi & S.QualOK);
 [~, S.GeneNo] = ismember(S.SpotGeneName(PlotSpots), S.uGenes);
@@ -124,13 +120,13 @@ else
 end
 
 assignin('base','issPlot3DZPlane',S.MinZ)
-assignin('base','issPlot3DSpotsShown',PlotSpots)
+assignin('base','issPlot3DObject',S)
 
 S.sl = uicontrol('style','slide',...
                  'unit','pix',...
                  'position',[60 8 693 18],...
-                 'min',1,'max',Roi(6)-Roi(5)+1,'val',S.HalfZ-S.MinZ+1,...
-                 'sliderstep',[1/(Roi(6)-Roi(5)) 1/(Roi(6)-Roi(5))],...
+                 'min',1,'max',S.ZRange+1,'val',1,...
+                 'sliderstep',[1/S.ZRange 1/S.ZRange],...
                  'callback',{@sl_call,S});  
 set( findall( S.fh, '-property', 'Units' ), 'Units', 'Normalized' )
 
@@ -140,7 +136,8 @@ set( findall( S.fh, '-property', 'Units' ), 'Units', 'Normalized' )
 
 function [] = sl_call(varargin)
 % Callback for the slider.
-[h,S] = varargin{[1,3]};  % calling handle and data structure.
+[h,~] = varargin{[1,3]};  % calling handle and data structure.
+S = evalin('base', 'issPlot3DObject');  %Take S from workspace so can use iss_change_plot
 ZPlane = round(get(h,'value'))+S.MinZ-1;
 S.Background = imagesc(S.Image(:,:,ZPlane-S.MinZ+1)); hold on; colormap bone;
 %set(S.Background, 'XData', [S.Roi(3), S.Roi(4)]);
@@ -184,6 +181,8 @@ end
 
 %Update current Z position in woprkspace so can use for iss_view_codes
 assignin('base','issPlot3DZPlane',ZPlane)
+assignin('base','issPlot3DObject',S)
+
 
 
 
