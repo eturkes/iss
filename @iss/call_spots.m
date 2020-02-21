@@ -10,6 +10,9 @@ function o = call_spots(o)
 % Using o.UseChannels and o.UseRounds, you can do spot calling
 % without using certain rounds and colour channels.
 %
+% This does the final normalisation differently. Now each round has norm 1
+% not the whole code.
+%
 % Kenneth D. Harris, 29/3/17
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
 
@@ -40,7 +43,7 @@ nRounds = size(o.UseRounds,2);
 %o.SpotGlobalYX = o.SpotGlobalYX(Bad==0,:);
 
 SpotColors = bsxfun(@rdivide, o.cSpotColors, prctile(o.cSpotColors, o.SpotNormPrctile));
-%SpotColors = o.cSpotColors;
+
 % now we cluster the intensity vectors to estimate the Bleed Matrix
 BleedMatrix = zeros(nChans,nChans,nRounds); % (Measured, Real, Round)
 if strcmpi(o.BleedMatrixType,'Separate')
@@ -69,7 +72,7 @@ else
 end
 
 if o.Graphics
-    figure(98043765); clf
+    figure(98043764); clf
     for i=1:nRounds
         subplot(ceil(nRounds/3),3,i); 
         imagesc(BleedMatrix(:,:,i)); 
@@ -157,10 +160,28 @@ for i=1:nCodes
 end
 
 if 1 % 0 to just use original codes
-    NormBledCodes = bsxfun(@rdivide, BledCodes, sqrt(sum(BledCodes.^2,2)));
+    %Normalise so norm in each round is 1
+    NormBledCodes = reshape(BledCodes,[nCodes,o.nBP,nRounds]);
+    for g=1:nCodes
+        for r=1:nRounds
+            NormBledCodes(g,:,o.UseRounds(r)) = NormBledCodes(g,:,o.UseRounds(r))/...
+                norm(squeeze(NormBledCodes(g,:,o.UseRounds(r))));
+        end
+    end
+    NormBledCodes = reshape(NormBledCodes,[nCodes,o.nBP*nRounds]);
+    
+    nSpots = size(SpotColors,1);
     FlatSpotColors = SpotColors(:,:);
     o.SpotIntensity = sqrt(nansum(FlatSpotColors.^2,2));
-    NormFlatSpotColors = bsxfun(@rdivide, FlatSpotColors, o.SpotIntensity);
+    
+    NormSpotColors = SpotColors;
+    for s=1:nSpots
+        for r=1:nRounds
+            NormSpotColors(s,:,o.UseRounds(r)) = NormSpotColors(s,:,o.UseRounds(r))/...
+                norm(squeeze(NormSpotColors(s,:,o.UseRounds(r))));
+        end
+    end
+    NormFlatSpotColors = NormSpotColors(:,:);
     
     %Get rid of NaN values
     NormFlatSpotColors(isnan(NormFlatSpotColors)) = 0;
