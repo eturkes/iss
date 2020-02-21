@@ -303,7 +303,8 @@ for t=1:nTiles
                     fprintf('Point cloud: ref round tile %d -> tile %d round %d base %d, %d/%d matches, error %f\n', ...
                         t, t2, r, b,  o.nMatches(t,b,r), size(o.RawLocalYXZ{t2},1), o.Error(t,b,r));
                     if o.nMatches(t,b,r)<o.MinPCMatches || isempty(o.nMatches(t,b,r))
-                        continue;
+                        warning('Tile %d, channel %d, round %d has %d point cloud matches, which is below the threshold of %d.',...
+                            t,b,r,o.nMatches(t,b,r),o.MinPCMatches);
                     end
                     CenteredMyPointCorrectedYXZ = (CenteredScaledMyLocalYXZ*o.A(:,:,t,r,b));
                     MyPointCorrectedYXZ = round(CenteredMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize] + o.CentreCorrection);
