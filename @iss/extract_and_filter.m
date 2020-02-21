@@ -14,9 +14,14 @@ function o = extract_and_filter(o)
 %     hzdirection = hanning(3);
 %     hzdirection = reshape(hzdirection,[1,1,3]);
 %     SE = h2D.*hzdirection;
+
+    AnchorChannelsToUse = [o.DapiChannel,o.AnchorChannel];
+    if ~isempty(o.SplitAnchorChannels)
+        AnchorChannelsToUse = [AnchorChannelsToUse,o.SplitAnchorChannels];
+    end
     
     
-    for r = 1:o.nRounds+o.nExtraRounds       
+    for r = 1:o.nRounds+o.nExtraRounds    
         imfile = fullfile(o.InputDirectory, [o.FileBase{r}, o.RawFileExtension]);
 
         % construct a Bio-Formats reader with the Memoizer wrapper
@@ -85,7 +90,7 @@ function o = extract_and_filter(o)
         
         Index = 1;
         %parfor t = 1:nSerieswPos  
-        for t = 1:nSerieswPos  
+        for t = 1:nSerieswPos 
                        
             % a new reader per worker
             bfreader = javaObject('loci.formats.Memoizer', bfGetReader(), 0);
@@ -102,14 +107,14 @@ function o = extract_and_filter(o)
                     fprintf('Round %d tile %d already done.\n', r, t);
                     o.TilePosYXC(Index,:) = [TilePosYX(t,:),c];          %Think first Z plane is the highest
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
-                    if o.AutoThresh(t,c,r) == 0  
+                    if o.AutoThresh(t,c,r) == 0
                         if c == o.DapiChannel && r == o.ReferenceRound; continue; end
                         IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
                         o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
                     end
                     Index = Index+1;
                     continue;
-                elseif (r == o.ReferenceRound && c ~= o.AnchorChannel) && (r == o.ReferenceRound && c ~= o.DapiChannel)
+                elseif r == o.ReferenceRound && ~ismember(c,AnchorChannelsToUse)
                     %Only need anchor and dapi tiles in reference round
                     continue;
                 end
@@ -165,10 +170,10 @@ function o = extract_and_filter(o)
                 
                 
                 %Append each z plane to same tiff image
-                %Add 2^16/2 so keep negative pixels for background analysis
+                %Add o.TilePixelValueShift so keep negative pixels for background analysis
                 IFS = IFS + o.TilePixelValueShift;
                 for z = 1:o.nZ
-                    imwrite(uint16(IFS(:,:,z)),...  %Not sure if uint16 is correct, wasnt working without
+                    imwrite(uint16(IFS(:,:,z)),... 
                             fullfile(o.TileDirectory,...
                             [o.FileBase{r}, '_t', num2str(t),'c', num2str(c), '.tif']),...
                             'tiff', 'writemode', 'append');
@@ -202,22 +207,35 @@ function o = extract_and_filter(o)
             end
         end
         %Add anchor
-        Thresholds = [Thresholds;o.AutoThresh(:,o.AnchorChannel,o.ReferenceRound)];
-        group = [group;index*ones(size(o.AutoThresh(:,1,1)))];
+        AnchorChannels = AnchorChannelsToUse(AnchorChannelsToUse~=o.DapiChannel);
+        AnchorLabels = cell(size(AnchorChannels));
+        LabelIndex = 1;
+        for c=AnchorChannels
+            Thresholds = [Thresholds;o.AutoThresh(:,c,o.ReferenceRound)];
+            group = [group;index*ones(size(o.AutoThresh(:,1,1)))];
+            if c == o.AnchorChannel
+                AnchorLabels(LabelIndex) = {'Full Anchor'};
+            else
+                AnchorLabels(LabelIndex) = {['Split Anchor ',num2str(LabelIndex-1)]};
+            end
+            LabelIndex = LabelIndex+1;
+            index=index+1;
+        end
         
         figure(43290);
         colors = colormap(lines(nChannels));
         Colors = repelem(colors,o.nRounds,1);
-        Colors = [Colors;repelem([0,0,0],nChannels,1)];        
-        boxplot(Thresholds,group,'Colors',Colors, 'plotstyle', 'compact','labels', [string(repmat(1:o.nRounds,1,nChannels)),'Anchor']);
-        set(gca,'TickLength',[0 0])
+        Colors = [Colors;repelem([0,0,0],nChannels,1)];
+        Labels = [string(repmat(1:o.nRounds,1,nChannels)),string(AnchorLabels)];
+        boxplot(Thresholds,group,'Colors',Colors, 'plotstyle', 'compact','labels', Labels);
+        set(gca,'TickLength',[0 0]);
         ylabel('AutoThreshold');
         xlabel('Round');
         hold on
         for c=1:nChannels
-            plot(NaN,1,'color', colors(c,:), 'LineWidth', 4);
+            plot(NaN,1,'color', colors(c,:), 'LineWidth', 4);       %For legend labels
         end
-        leg = legend(o.bpLabels);
+        leg = legend(o.bpLabels,'Location','northwest');
         title(leg,'Color Channel');
         hold off
     end

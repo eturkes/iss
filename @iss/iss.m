@@ -73,13 +73,13 @@ classdef iss
         % the decimal points, should multiply image so max pixel number is
         % in the 10,000s (less than 65,536). If 'auto', it sets to
         % 10,000/max(Tile 1 round 1 colour channel 1).
-        ExtractScale = 10;
+        ExtractScale = 2;
         %ExtractScale = 5*10^7;
         
         % TilePixelValueShift is added onto every tile when it is saved and 
         % removed from every tile when loaded so we can have negative pixel 
         % values. Saves as uint16 so default is 2^16/2.
-        TilePixelValueShift = 32768;
+        TilePixelValueShift = 15000;
         
         % Dapi has different scaling as different filter used.
         DapiScale = 'auto';
@@ -386,8 +386,11 @@ classdef iss
         % for dapi images: scale is downsampling factor for final .fig file
         DapiChannel = 1;  
         
-        % which channel of each file is anchor images
+        % which channel of anchor round is anchor image
         AnchorChannel = 2;
+        
+        % which channels of anchor round are split anchor images
+        SplitAnchorChannels;
         
         % which channel has first round of sequencing images
         FirstBaseChannel = 3;
@@ -472,6 +475,10 @@ classdef iss
         %RawIsolated{t} labels each spot in the anchor round as isolated or not
         RawIsolated;
         
+        %RawChannel{t} stores the channel each spot on tile t was found in the
+        %anchor round
+        RawChannel;
+        
         %RegInfo saves debugging information for the registration section.
         %h = horizontal, v = vertical
         %Score(i) is the score for the Shifts(i) found between tiles given by Pairs(i)
@@ -527,6 +534,10 @@ classdef iss
         % again for combinatorial spots only
         cSpotIsolated; 
         
+        % cSpotAnchorChannel(Spot) is an array saying which channel of the
+        % anchor round each spot was found in.
+        cSpotAnchorChannel;
+        
         % SpotCombi: binary array which is one for combinatorial spots,
         % zero for extra spots
         SpotCombi;
@@ -559,6 +570,14 @@ classdef iss
         % because they have extra rounds
         GeneNames;
         
+        % GeneAnchorChannelFile is the .mat file containing the anchor
+        % round of each gene under T.Channel+1;
+        GeneAnchorChannelFile;
+        
+        % GeneAnchorChannel(i) is the anchor channel that the gene GeneNames(i)
+        % can be found on
+        GeneAnchorChannel;
+        
         % UnbledCodes(nCodes, nBP*nRounds): binary code vectors
         UnbledCodes;
         
@@ -572,7 +591,9 @@ classdef iss
         
         % BleedMatrix used to estimate BledCodes
         BleedMatrix;
-		
+        
+        
+        
         %% variables: cell calling outputs
         % pCellClass(cell, class); % prob each cell goes to each class: last class is zero expression
         pCellClass;

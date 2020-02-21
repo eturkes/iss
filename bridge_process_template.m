@@ -20,7 +20,8 @@ o.FileBase{8} = 'anchor';    %Make sure the last round is the anchor
 o.RawFileExtension = '.nd2';
 o.TileDirectory = 'C:\Users\...\Experiment1\tiles'; 
 o.DapiChannel = 1;
-o.AnchorChannel = 5;
+o.AnchorChannel = 2;
+o.SplitAnchorChannels = [5,6,7];
 o.ReferenceRound = 8;
 o.TileSz = 2048;
 o.OutputDirectory = 'C:\Users\...\Experiment1\output'; 
@@ -36,8 +37,9 @@ o.DapiR1Z = 9;
 o.DapiR2YX = 40;
 o.DapiR2Z = 18;
 
-o.ExtractScale = 10;
+o.ExtractScale = 2;
 o.DapiScale = 10;
+o.TilePixelValueShift = 15000;
 
 %run code
 o = o.extract_and_filter;
@@ -71,6 +73,12 @@ o.RegSearch.East.Z = -2:o.RegStep(3):2;
 %run code
 o = o.register2;
 save(fullfile(o.OutputDirectory, 'oRegister'), 'o', '-v7.3');
+
+
+%% Get split anchor spots
+
+o = o.SplitAnchorFindSpots;
+save(fullfile(o.OutputDirectory, 'oRegister_SplitAnchor'), 'o', '-v7.3');
 
 %% find spots
 

@@ -44,6 +44,7 @@ nTiles = nY*nX;
     
 %% now make array of global coordinates
 AllIsolated = logical(vertcat(o.RawIsolated{:})); % I HATE MATLAB - for converting logical to doubles for no reason
+AllAnchorChannel = int16(vertcat(o.RawChannel{:}));
 nAll = length(AllIsolated);
 
 AllGlobalYXZ = zeros(nAll,3);
@@ -71,6 +72,7 @@ ndGlobalYXZ = AllGlobalYXZ(NotDuplicate,:);
 ndLocalYXZ = AllLocalYXZ(NotDuplicate,:);
 ndIsolated = AllIsolated(NotDuplicate,:);
 ndLocalTile = AllLocalTile(NotDuplicate,:);
+ndAnchorChannel = AllAnchorChannel(NotDuplicate,:);
 
 nnd = sum(NotDuplicate);
 
@@ -332,9 +334,10 @@ GoodGlobalYXZ = ndGlobalYXZ(Good,:);
 GoodSpotColors = ndSpotColors(Good,:,:);
 GoodLocalTile = ndLocalTile(Good);
 GoodIsolated = ndIsolated(Good);
+GoodAnchorChannel = ndAnchorChannel(Good);
 
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ',...
-    'Good', 'ndGlobalYXZ', 'ndSpotColors', 'ndLocalTile','ndIsolated','ndPointCorrectedLocalYXZ','ndRoundYXZ','ndRoundTile');
+    'Good', 'ndGlobalYXZ', 'ndSpotColors', 'ndLocalTile','ndIsolated','ndAnchorChannel','ndPointCorrectedLocalYXZ','ndRoundYXZ','ndRoundTile');
 
 %% plot those that were found and those that weren't
 if o.Graphics
@@ -424,4 +427,5 @@ o.SpotGlobalYXZ = GoodGlobalYXZ;
 o.cSpotColors = GoodSpotColors;          
 %o.cAnchorIntensities = squeeze(GoodSpotColors(:,1,:));
 o.cSpotIsolated = GoodIsolated;
+o.cSpotAnchorChannel = GoodAnchorChannel;
 
