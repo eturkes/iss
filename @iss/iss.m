@@ -293,9 +293,9 @@ classdef iss
         BleedMatrixType = 'Single';
         
         % score and intensity thresholds to plot a spot (combi codes)
-        CombiQualThresh = .7;         
+        CombiQualThresh = 4;         
         CombiIntensityThresh = .1;
-        CombiDevThresh = 0.07;
+        CombiDevThresh = 0.3;
         CombiAnchorsReq = 4; % need at least this many anchor chans above threshold
         
         nRedundantRounds = 0;
