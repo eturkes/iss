@@ -91,13 +91,23 @@ function SpotNo = iss_view_prob(o, FigNo, Norm, SpotNum)
         c3 = [1,0,0]; else; c3 = [0,0,0];end
     if o.pSpotIntensity(SpotNo)<o.pIntensityThresh
         c4 = [1,0,0]; else; c4 = [0,0,0];end
+
     
     set(gcf,'Position',[350 100 1000 850])
     figtitle = sgtitle('', 'interpreter', 'tex');   %'tex' required for colors
-    figtitle.String = sprintf('%s{%f %f %f}Score = %.1f, %s{%f %f %f}LogProb = %.0f, %s{%f %f %f}Score Deviation = %.1f, %s{%f %f %f}Intensity = %.0f',...
-       '\color[rgb]',c1,o.pSpotScore(SpotNo),'\color[rgb]',c2, o.pLogProb(SpotNo),...
-       '\color[rgb]',c3,o.pSpotScoreDev(SpotNo),'\color[rgb]',c4,o.pSpotIntensity(SpotNo));
-    %figtitle.Color='red';
+    if isempty(o.cSpotAnchorChannel)
+        figtitle.String = sprintf('%s{%f %f %f}Score = %.1f, %s{%f %f %f}LogProb = %.0f, %s{%f %f %f}Score Deviation = %.1f, %s{%f %f %f}Intensity = %.0f',...
+            '\color[rgb]',c1,o.pSpotScore(SpotNo),'\color[rgb]',c2, o.pLogProb(SpotNo),...
+            '\color[rgb]',c3,o.pSpotScoreDev(SpotNo),'\color[rgb]',c4,o.pSpotIntensity(SpotNo));
+    else
+        if o.cSpotAnchorChannel(SpotNo) ~= o.GeneAnchorChannel(CodeNo)
+            c5 = [1,0,0]; else; c5 = [0,0,0];end
+        figtitle.String = sprintf('%s{%f %f %f}Score = %.1f, %s{%f %f %f}LogProb = %.0f, %s{%f %f %f}Score Deviation = %.1f, %s{%f %f %f}Intensity = %.0f, %s{%f %f %f}Spot SplitAnchor Channel = %.0f, %s SplitAnchor Channel = %.0f',...
+            '\color[rgb]',c1,o.pSpotScore(SpotNo),'\color[rgb]',c2, o.pLogProb(SpotNo),...
+            '\color[rgb]',c3,o.pSpotScoreDev(SpotNo),'\color[rgb]',c4,o.pSpotIntensity(SpotNo),...
+            c5,o.cSpotAnchorChannel(SpotNo),o.GeneNames{CodeNo},o.GeneAnchorChannel(CodeNo));
+    end
+
     drawnow
     
     fprintf('Spot %d at yxz=(%d,%d,%d): code %d, %s\n', ...
