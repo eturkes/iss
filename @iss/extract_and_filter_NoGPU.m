@@ -1,7 +1,6 @@
-function o = extract_and_filter(o)
+function o = extract_and_filter_NoGPU(o)
 % create tiff files for each tile that are top-hat filtered versions of
 % original czi files
-% This uses a GPU for speed
 
     o.TileFiles = cell(o.nRounds+o.nExtraRounds,1,1,1); % 1,1,1 because we don't yet know how many tiles
     
@@ -11,7 +10,7 @@ function o = extract_and_filter(o)
     h(o.ExtractR2+1-o.ExtractR1:o.ExtractR2+1+o.ExtractR1) = ...
         h(o.ExtractR2+1-o.ExtractR1:o.ExtractR2+1+o.ExtractR1)+hanning(o.ExtractR1*2+1)/sum(hanning(o.ExtractR1*2+1));
     SE = ftrans2(h');
-    SE = single(gpuArray(SE));
+    SE = single(SE);
 %     h2D = ftrans2(h');
 %     hzdirection = hanning(3);
 %     hzdirection = reshape(hzdirection,[1,1,3]);
@@ -112,10 +111,10 @@ function o = extract_and_filter(o)
                     o.TileFiles{r,o.TilePosYXC(Index,1), o.TilePosYXC(Index,2),o.TilePosYXC(Index,3)} = fName{Index};
                     if o.AutoThresh(t,c,r) == 0
                         if c == o.DapiChannel && r == o.ReferenceRound; continue; end
-                        IFS = o.load_3D_GPU(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
-                        o.AutoThresh(t,c,r) = gather(median(abs(IFS(:)))*o.AutoThreshMultiplier);
+                        IFS = o.load_3D(r,o.TilePosYXC(Index,1),o.TilePosYXC(Index,2),c)-o.TilePixelValueShift;
+                        o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
                         if r~= o.ReferenceRound
-                            o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+gather(histc(IFS(:),o.HistValues));
+                            o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+histc(IFS(:),o.HistValues);
                         end
                     end
                     Index = Index+1;
@@ -134,7 +133,7 @@ function o = extract_and_filter(o)
 %                         SE = get_3DSE(o.ExtractR1YX,o.ExtractR1Z,o.ExtractR2YX,o.ExtractR2Z);
 %                 end
 
-                I = zeros(o.TileSz,o.TileSz,o.nZ,'gpuArray'); 
+                I = zeros(o.TileSz,o.TileSz,o.nZ); 
                 for z = 1:o.nZ
                     iPlane = bfreader.getIndex(z-1, c-1, 0)+1;
                     I(:,:,z) = bfGetPlane(bfreader, iPlane);
@@ -154,7 +153,7 @@ function o = extract_and_filter(o)
                 %I = ifftn(Norm_FT);
                 I = single(padarray(I,(size(SE)-1)/2,'replicate','both'));
                 IFS = convn(I,SE,'valid'); 
-                clearvars I  %Free up GPU memory
+                clearvars I  %Free up memory
                 
                 %Scaling so fills uint16 range.
                 if c == o.DapiChannel && r == o.ReferenceRound  
@@ -171,20 +170,20 @@ function o = extract_and_filter(o)
                     IFS = IFS*o.ExtractScale;
                     
                     %Determine auto thresholds
-                    o.AutoThresh(t,c,r) = gather(median(abs(IFS(:)))*o.AutoThreshMultiplier);
+                    o.AutoThresh(t,c,r) = median(abs(IFS(:)))*o.AutoThreshMultiplier;
                 end
                 
                 if r ~= o.ReferenceRound  
                     %Get histogram data
                     IFS = int16(IFS);
                     %AbridgedBaseIm = IFS(:,:,8:15);
-                    o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+gather(histc(IFS(:),o.HistValues));
+                    o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+histc(IFS(:),o.HistValues);
                 end
                 
                 
                 %Append each z plane to same tiff image
                 %Add o.TilePixelValueShift so keep negative pixels for background analysis
-                IFS = gather(uint16(IFS+o.TilePixelValueShift));   
+                IFS = uint16(IFS+o.TilePixelValueShift);   
                 %IFS = uint16(IFS + o.TilePixelValueShift);
                 for z = 1:o.nZ
                     imwrite(IFS(:,:,z),... 
