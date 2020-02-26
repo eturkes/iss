@@ -73,13 +73,13 @@ classdef iss
         % the decimal points, should multiply image so max pixel number is
         % in the 10,000s (less than 65,536). If 'auto', it sets to
         % 10,000/max(Tile 1 round 1 colour channel 1).
-        ExtractScale = 10;
+        ExtractScale = 2;
         %ExtractScale = 5*10^7;
         
         % TilePixelValueShift is added onto every tile when it is saved and 
         % removed from every tile when loaded so we can have negative pixel 
         % values. Saves as uint16 so default is 2^16/2.
-        TilePixelValueShift = 32768;
+        TilePixelValueShift = 15000;
         
         % Dapi has different scaling as different filter used.
         DapiScale = 'auto';
@@ -237,7 +237,7 @@ classdef iss
         CentreCorrection;
         
         %MinThresh is the smallest value DectionThresh can get to       
-        MinThresh;
+        MinThresh = 10;
         
         %MinSpots is the smallest number of spots on a round/tile for a
         %particular colour channel for hat color channel to be deemed

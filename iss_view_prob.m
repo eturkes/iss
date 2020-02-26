@@ -15,7 +15,8 @@ function SpotNo = iss_view_prob(o, FigNo, Norm, SpotNum)
         if nargin>=2
             figure(FigNo);
         end
-        xy = ginput(1);
+        CrossHairColor = [1,1,1];   %Make white as black background
+        xy = ginput_modified(1,CrossHairColor);
         try
             zPlane = evalin('base', 'issPlot3DZPlane');     
             [~,SpotNo] = min(sum(abs(o.SpotGlobalYXZ-[xy(2),xy(1),zPlane]),2));
