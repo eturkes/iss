@@ -3,7 +3,7 @@ function QualOK = quality_threshold_prob(o)
 % quick function that returns a binary saying which spots are above quality
 % threshold
 
-QualOK = (o.pSpotScore>o.pScoreThresh | ...
+QualOK = (o.pSpotScore>o.pScoreThresh & o.pSpotIntensity>0 | ...
 o.pSpotIntensity>o.pIntensityThresh & o.pLogProb>o.pLogProbThresh & o.pSpotScore+o.pSpotScoreDev>o.pDevThresh);
 
 % % HACK ALERT
