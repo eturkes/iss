@@ -335,90 +335,11 @@ GoodIsolated = ndIsolated(Good);
 save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ',...
     'Good', 'ndGlobalYXZ', 'ndSpotColors', 'ndLocalTile','ndIsolated','ndPointCorrectedLocalYXZ','ndRoundYXZ','ndRoundTile');
 
-%% plot those that were found and those that weren't
+% plot those that were found and those that weren't
 if o.Graphics
     plotSpotsResolved(o,ndGlobalYXZ,Good,Tiles,'Resolved Spots')
 end
        
-
-%% sanity check
-plsz = 7;
-if o.Graphics ==2
-    GoodRoundYXZ = ndRoundYXZ(Good,:,:);
-    GoodRoundTile = ndRoundTile(Good,:);
-    GoodCorrectedYXZ = ndPointCorrectedLocalYXZ(Good,:,:,:);
-
-    roi = o.FindSpotsRoi;
-    PlotSpots = find(GoodGlobalYXZ(:,1)>roi(1) & GoodGlobalYXZ(:,1)<roi(2) & GoodGlobalYXZ(:,2)>roi(3) & GoodGlobalYXZ(:,2)<roi(4)...
-        & round(GoodGlobalYXZ(:,3))>roi(5)& round(GoodGlobalYXZ(:,3))<roi(6));
-    
-    for s=(PlotSpots(:))' %PlotSpots(randperm(length(PlotSpots)))'
-        figure(s); clf
-        for r=o.UseRounds
-            t=GoodRoundTile(s,r);
-            [yTile,xTile] = ind2sub([nY nX], t);
-            fprintf('Spot %d, round %d, tile %d: y=%d, x=%d, z=%d\n', s, r, t, GoodRoundYXZ(s,1,r), GoodRoundYXZ(s,2,r), GoodRoundYXZ(s,3,r));
-
-            Ylegends = {o.bpLabels{:}};
-            for b=o.UseChannels
-                
-                      
-%                 if b==0                    
-%                     y0 = GoodRoundYX(s,1,r);
-%                     x0 = GoodRoundYX(s,2,r);
-%                 else
-%                     y0 = GoodCorrectedYX(s,1,r,b);
-%                     x0 = GoodCorrectedYX(s,2,r,b);
-%                 end
-                y0 = GoodCorrectedYXZ(s,1,r,b);
-                x0 = GoodCorrectedYXZ(s,2,r,b);
-                z = round(GoodCorrectedYXZ(s,3,r,b));
-                if ~isfinite(x0) || ~isfinite(y0)
-                    continue;
-                end
-                y1 = max(1,y0 - plsz);
-                y2 = min(o.TileSz,y0 + plsz);
-                x1 = max(1,x0 - plsz);
-                x2 = min(o.TileSz,x0 + plsz);
-           
-                BaseIm = imread(o.TileFiles{r,yTile,xTile,o.FirstBaseChannel + b - 1}, z, 'PixelRegion', {[y1 y2], [x1 x2]})-o.TilePixelValueShift;
-                if o.SmoothSize
-                    SE = fspecial3('ellipsoid',o.SmoothSize); 
-                    BaseImSm = imfilter(BaseIm, SE);
-                else
-                    BaseImSm = BaseIm;
-                end
-
-                subplot(o.nBP, o.nRounds, (b-1)*o.nRounds + r)
-                imagesc([x1 x2], [y1 y2], BaseImSm); hold on
-                axis([x0-plsz, x0+plsz, y0-plsz, y0+plsz]);
-                plot(xlim, [y0 y0], 'w'); plot([x0 x0], ylim, 'w');
-                caxis([0 o.AutoThresh(t,b,r)*2]);
-                if r==1; ylabel(Ylegends{b}); end
-                colorbar;
-                
-                title(sprintf('Round %d, Base %d, Tile %d', r, b, t));
-                drawnow
-            end
-        end
-        fprintf('\n');
-        %figure(92); clf
-        %imagesc(sq(GoodSpotColors(s,:,:)));
-        %set(gca, 'ytick', 1:5); set(gca, 'yticklabel', {'Anchor', o.bpLabels{:}});
-        %caxis([0 o.DetectionThresh*2]);
-%         fprintf('local YX = (%f, %f) screen YX = (%f, %f) Called as %s, %s, quality %f\n', ...
-%             GoodRoundYX(s,1), GoodRoundYX(s,2), GoodGlobalYX(s,1)/4, GoodGlobalYX(s,2)/4, ...
-%             GoodCodes{s}, GoodGenes{s}, GoodMaxScore(s));
-        %figure(1003); hold on
-        %squarex = [-1 1 1 -1 -1]*plsz; squarey = [-1 -1 1 1 -1]*plsz;
-        %h = plot(GoodGlobalYXZ(s,2)+squarex, GoodGlobalYXZ(s,1)+squarey, 'g');
-        %pause;
-        %delete(h);
-    end
-end
-
-
-
 o.SpotGlobalYXZ = GoodGlobalYXZ;
 o.cSpotColors = GoodSpotColors;          
 %o.cAnchorIntensities = squeeze(GoodSpotColors(:,1,:));

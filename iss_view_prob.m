@@ -59,7 +59,7 @@ function SpotNo = iss_view_prob(o, FigNo, Norm, SpotNum)
     subplot(3,1,1);
     imagesc(MeasuredCode); colorbar
     caxis([0 max(MeasuredCode(:))]);
-    title(sprintf('Spot Code'));
+    title(sprintf('Spot %.0f Code',SpotNo));
     set(gca, 'ytick', 1:o.nBP);
     set(gca, 'YTickLabel', o.bpLabels);
     ylabel('Color Channel');
