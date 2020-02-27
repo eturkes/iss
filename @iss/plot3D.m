@@ -1,4 +1,4 @@
-function S = plot3D(o, BackgroundImageFile, ZThick, Roi)
+function plot3D(o, BackgroundImageFile, ZThick, Roi)
 % o.plot(BackgroundImage, Roi)
 %
 % plot the results of in situ sequencing spot detection. 
