@@ -1,4 +1,4 @@
-function o = find_spots(o)         
+function o = find_spots_FFt(o)         
 % SLOW - DON'T RECOMMEND USING THIS VERSION
 % o = o.find_spots;
 %
@@ -40,25 +40,24 @@ Tiles = find(~o.EmptyTiles)';
 nTiles = nY*nX;
 
 %% loop through all tiles, finding spots in anchor channel on ref round
-RawLocalYXZ = cell(nTiles,1);  % cell array, giving spots in local coordinates
-RawIsolated = cell(nTiles,1);
-%SE = fspecial3('ellipsoid',[o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize]);
-SE = fspecial3('ellipsoid',o.SmoothSize);
+o.RawLocalYXZ = cell(nTiles,1);  % cell array, giving spots in local coordinates
+o.RawIsolated = cell(nTiles,1);
+
 for t=Tiles
     if mod(t,10)==0; fprintf('Detecting reference spots in tile %d\n', t); end
     [y,x] = ind2sub([nY nX], t);
-    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel);
+    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel)-o.TilePixelValueShift;
     if o.SmoothSize
-        %NOT SURE HOW TO DO THIS SMOOTHING YET        
+        SE = fspecial3('ellipsoid',o.SmoothSize);      
         AnchorImSm = imfilter(AnchorIm, SE);
     else
         AnchorImSm = AnchorIm;
     end
-    [RawLocalYXZ{t}, RawIsolated{t}] = o.detect_spots(AnchorImSm);
+    [o.RawLocalYXZ{t}, o.RawIsolated{t}] = o.detect_spots(AnchorImSm);
 end
     
 %% now make array of global coordinates
-AllIsolated = logical(vertcat(RawIsolated{:})); % I HATE MATLAB - for converting logical to doubles for no reason
+AllIsolated = logical(vertcat(o.RawIsolated{:})); % I HATE MATLAB - for converting logical to doubles for no reason
 nAll = length(AllIsolated);
 
 AllGlobalYXZ = zeros(nAll,3);
@@ -67,7 +66,7 @@ OriginalTile = zeros(nAll,1);
 
 ind = 1;
 for t=Tiles
-    MySpots = RawLocalYXZ{t};
+    MySpots = o.RawLocalYXZ{t};
     nMySpots = size(MySpots, 1);
     AllGlobalYXZ(ind:ind+nMySpots-1,:) = bsxfun(@plus, MySpots, o.TileOrigin(t,:,rr));
     AllLocalYXZ(ind:ind+nMySpots-1,:) = MySpots;
@@ -114,7 +113,6 @@ end
 fprintf('\nLocating spots in each colour channel of tile   ');
 
 %For scaling need to be centered about 0 hence subtract this
-o.CentreCorrection = [1+(o.TileSz-1)/2,1+(o.TileSz-1)/2,1+(o.nZ-1)/2];
 o.D0 = zeros(nTiles,3,o.nRounds);
 cc = zeros(nTiles,o.nRounds);
 for t=1:nTiles
@@ -128,8 +126,9 @@ for t=1:nTiles
     
     [y, x] = ind2sub([nY nX], t);
     %Reload AnchorIm to do ImRegFFT3
-    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel);
+    AnchorIm = o.load_3D(rr,y,x,o.AnchorChannel)-o.TilePixelValueShift;
     if o.SmoothSize
+        SE = fspecial3('ellipsoid',o.SmoothSize);
         AnchorImSm = single(imfilter(AnchorIm, SE));
         clear AnchorIm
     else
@@ -144,19 +143,23 @@ for t=1:nTiles
         %FinalBaseIm = zeros(o.TileSz,o.TileSz,o.nZ);        %Max projected image of round to find initial shift
         for b = o.UseChannels              
 
-            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1);
+            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1)-o.TilePixelValueShift;
+            if o.SmoothSize
+                %BaseImSm = imfilter(double(BaseIm), fspecial('disk', o.SmoothSize));
+                SE = fspecial3('ellipsoid',o.SmoothSize);
+                BaseIm = imfilter(BaseIm, SE);
+            end
             %SE = fspecial3('ellipsoid',[o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize*o.Zpixelsize/o.XYpixelsize, o.SmoothSize]);
-            BaseIm = imfilter(BaseIm, SE); %NOT SURE WHETHER IT IS RIGHT TO SMOOTH HERE OR NOT. IN 2D SPOTS WHERE DETECTED WITH NO SMOOTHING
             %o.MinThresh = max(mean(mean(BaseIm)));
             %o.DetectionThresh = 1.5*max(mean(mean(BaseIm)));
             % find spots for base b on tile t - we will use this for point
             % cloud registration only, we don't use these detections to
             % detect colors, we read the colors off the
             % pointcloud-corrected positions of the spots detected in the reference round home tiles  
-            CenteredSpots = o.detect_spots(BaseIm) - o.CentreCorrection;
+            Spots = o.detect_spots(BaseIm);
             %Scale so all in terms of XY pixel size. Import for PCR as find
             %nearest neighbours
-            AllBaseLocalYXZ(t,b,r) = {CenteredSpots.*[1,1,o.Zpixelsize/o.XYpixelsize]};
+            AllBaseLocalYXZ(t,b,r) = {Spots.*[1,1,o.Zpixelsize/o.XYpixelsize]};
             %FinalBaseIm = max(FinalBaseIm,BaseIm); %INSTEAD OF THIS, JUST USE IMAGE WITH MOST SPOTS
         end
         [o.D0(t,:,r), cc(t,r)] = o.ImRegFFt3D_FindSpots(BaseIm,AnchorImSm, 0, o.RegMinSize); %ADD cc TO ISS class!!!!!
@@ -167,20 +170,10 @@ fprintf('\n');
 
 %PCR initial shifts
 o.D0 = o.D0.*[1,1,o.Zpixelsize/o.XYpixelsize];       %Convert shift so units are XY pixels. 
-%o = o.get_initial_shift(AllBaseLocalYXZ, RawLocalYXZ, nTiles, o.RegMinSize*1000);
-%A=o.D0(:,:,1);
-%A(:,3)=0;
-%o.D0(:,:,1)=A;
-%A=o.D0(:,:,2);
-%A(:,3)=0;
-%o.D0(:,:,2)=A;
-%o.D0(7,:,1) = o.TileOrigin(1,:,rr)-o.TileOrigin(1,:,7);
-%o.D0(14,:,3) = [10,45]; %This makes sense as there is a major artifact in
-%this tile/round
 
-o = o.PointCloudRegister_NoAnchor3DNoCA(AllBaseLocalYXZ, RawLocalYXZ, nTiles);
+o = o.PointCloudRegister_NoAnchor3DWithCA(AllBaseLocalYXZ, o.RawLocalYXZ, nTiles);
 
-
+save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ');
 %% decide which tile to read each spot off in each round. 
 % They are read of home tile if possible (always possible in ref round)
 % in other rounds might have to be a NWSE neighbor - but never a diagonal
@@ -190,7 +183,8 @@ o = o.PointCloudRegister_NoAnchor3DNoCA(AllBaseLocalYXZ, RawLocalYXZ, nTiles);
 
 %Compute approx new shifts in XY pixels, by taking the bottom row of the
 %transform R. Then convert z shift back to units of z pixels for origin
-XYPixelShifts = permute(squeeze(o.R(4,:,:,1:o.nRounds).*[1,1,o.XYpixelsize/o.Zpixelsize]),[2 1 3]);
+%THIS PART NEEDS WORK - NOT SURE IT IS THAT CRUCIAL THOUGH
+XYPixelShifts = permute(squeeze(o.A(4,:,:,1:o.nRounds,o.InitialShiftChannel).*[1,1,o.XYpixelsize/o.Zpixelsize]),[2 1 3]);
 o.TileOrigin(:,:,1:o.nRounds) =  o.TileOrigin(:,:,rr) - XYPixelShifts(:,:,1:o.nRounds);     
 
 ndRoundTile = nan(nnd,o.nRounds);
@@ -251,10 +245,11 @@ for t=1:nTiles
         for b=o.UseChannels              %No 0 as trying without using anchor
 
             
-            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1);
+            BaseIm = o.load_3D(r,y,x,o.FirstBaseChannel + b - 1)-o.TilePixelValueShift;
             
             if o.SmoothSize
                 %BaseImSm = imfilter(double(BaseIm), fspecial('disk', o.SmoothSize));
+                SE = fspecial3('ellipsoid',o.SmoothSize);
                 BaseImSm = imfilter(BaseIm, SE);
             else
                 BaseImSm = BaseIm;
@@ -262,24 +257,25 @@ for t=1:nTiles
             
             for t2 = MyRefTiles(:)'
                 MyBaseSpots = (ndRoundTile(:,r)==t & ndLocalTile==t2);
-                CenteredScaledMyLocalYXZ = [(ndLocalYXZ(MyBaseSpots,:) - o.CentreCorrection).*[1,1,o.Zpixelsize/o.XYpixelsize],...
+                ScaledMyLocalYXZ = [ndLocalYXZ(MyBaseSpots,:).*[1,1,o.Zpixelsize/o.XYpixelsize],...
                     ones(size(ndLocalYXZ(MyBaseSpots,:),1),1)];
                 
                 if t == t2
                     fprintf('Point cloud: ref round tile %d -> tile %d round %d base %d, %d/%d matches, error %f\n', ...
-                        t, t2, r, b,  o.nMatches(t,b,r), size(RawLocalYXZ{t2},1), o.Error(t,b,r));
+                        t, t2, r, b,  o.nMatches(t,b,r), size(o.RawLocalYXZ{t2},1), o.Error(t,b,r));
                     if o.nMatches(t,b,r)<o.MinPCMatches || isempty(o.nMatches(t,b,r))
-                        continue;
+                        warning('Tile %d, channel %d, round %d has %d point cloud matches, which is below the threshold of %d.',...
+                            t,b,r,o.nMatches(t,b,r),o.MinPCMatches);
                     end
-                    CenteredMyPointCorrectedYXZ = (CenteredScaledMyLocalYXZ*o.R(:,:,t,r));
-                    MyPointCorrectedYXZ = round(CenteredMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize] + o.CentreCorrection);
+                    ScaledMyPointCorrectedYXZ = (ScaledMyLocalYXZ*o.A(:,:,t,r,b));
+                    MyPointCorrectedYXZ = round(ScaledMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize]);
                     ndPointCorrectedLocalYXZ(MyBaseSpots,:,r,b) = MyPointCorrectedYXZ;
                     ndSpotColors(MyBaseSpots,b,r) = IndexArrayNan(BaseImSm, MyPointCorrectedYXZ');
                 else
-                    [MyPointCorrectedYXZ, error, nMatches] = o.different_tile_transform(AllBaseLocalYXZ,RawLocalYXZ, ...
-                        CenteredScaledMyLocalYXZ,t,t2,r,b);
+                    [MyPointCorrectedYXZ, Error, nMatches] = o.different_tile_transform(AllBaseLocalYXZ,o.RawLocalYXZ, ...
+                        ScaledMyLocalYXZ,t,t2,r,b);
                     fprintf('Point cloud: ref round tile %d -> tile %d round %d base %d, %d/%d matches, error %f\n', ...
-                        t, t2, r, b,  nMatches, size(RawLocalYXZ{t2},1), error);
+                        t, t2, r, b,  nMatches, size(o.RawLocalYXZ{t2},1), Error);
                     if nMatches<o.MinPCMatches || isempty(nMatches)
                         continue;
                     end
@@ -301,7 +297,8 @@ GoodSpotColors = ndSpotColors(Good,:,:);
 GoodLocalTile = ndLocalTile(Good);
 GoodIsolated = ndIsolated(Good);
 
-save(fullfile(o.OutputDirectory, 'Intensities_NoAnchor.mat'), 'Good', 'ndGlobalYXZ', 'ndSpotColors', 'ndLocalTile');
+save(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'o', 'AllBaseLocalYXZ',...
+    'Good', 'ndGlobalYXZ', 'ndSpotColors', 'ndLocalTile','ndIsolated','ndPointCorrectedLocalYXZ','ndRoundYXZ','ndRoundTile');
 
 %% plot those that were found and those that weren't
 if o.Graphics
@@ -349,9 +346,9 @@ if o.Graphics ==2
                 x1 = max(1,x0 - plsz);
                 x2 = min(o.TileSz,x0 + plsz);
            
-                BaseIm = imread(o.TileFiles{r,yTile,xTile,o.FirstBaseChannel + b - 1}, z, 'PixelRegion', {[y1 y2], [x1 x2]});
+                BaseIm = imread(o.TileFiles{r,yTile,xTile,o.FirstBaseChannel + b - 1}, z, 'PixelRegion', {[y1 y2], [x1 x2]})-o.TilePixelValueShift;
                 if o.SmoothSize
-                    %BaseImSm = imfilter(double(BaseIm), fspecial('disk', o.SmoothSize));
+                    SE = fspecial3('ellipsoid',o.SmoothSize); 
                     BaseImSm = imfilter(BaseIm, SE);
                 else
                     BaseImSm = BaseIm;
@@ -361,8 +358,8 @@ if o.Graphics ==2
                 imagesc([x1 x2], [y1 y2], BaseImSm); hold on
                 axis([x0-plsz, x0+plsz, y0-plsz, y0+plsz]);
                 plot(xlim, [y0 y0], 'w'); plot([x0 x0], ylim, 'w');
-                caxis([0 o.DetectionThresh*2]);
-                if r==1; ylabel(Ylegends{b+1}); end
+                caxis([0 o.AutoThresh(t,b,r)*2]);
+                if r==1; ylabel(Ylegends{b}); end
                 colorbar;
                 
                 title(sprintf('Round %d, Base %d, Tile %d', r, b, t));
@@ -391,4 +388,4 @@ o.SpotGlobalYXZ = GoodGlobalYXZ;
 o.cSpotColors = GoodSpotColors;          
 %o.cAnchorIntensities = squeeze(GoodSpotColors(:,1,:));
 o.cSpotIsolated = GoodIsolated;
-
+end

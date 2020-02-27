@@ -153,3 +153,4 @@ S = o.plot3D(BackgroundImage,ZThick);       %plot from call_spots
 
 %iss_change_plot(o,'DotProduct');       %change back to call_spots method
 
+%iss_change_plot(o,'DotProduct');       %change back to call_spots method

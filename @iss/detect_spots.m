@@ -59,8 +59,9 @@ Dilate = imdilate(Image, se1);
 % local maxima are where image=dilation
 Small = 1e-6; % just a small number, for computing local maxima: shouldn't matter what it is
 
-%Iterate threshold until more than 1000 peaks  (COULD DO THIS BUT WITH LOW
-%VARIANCE IN THE IMAGE INSTEAD)
+%Iterate threshold until more than o.minPeaks peaks  (COULD DO THIS BUT WITH LOW
+%VARIANCE IN THE IMAGE INSTEAD) NOT SURE ABOUT THIS STEP. USUALLY TURN OFF
+%BY SETTING o.minPeaks = 1
 nPeaks = 0;
 i = 0;
 while nPeaks < o.minPeaks              

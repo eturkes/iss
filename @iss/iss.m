@@ -232,12 +232,8 @@ classdef iss
         % it is this close to the edge, because of aberrations
         ExpectedAberration = 3;
         
-        %Centre Correction is the value to be subtracted from spot
-        %positions so they are centered about 0
-        CentreCorrection;
-        
         %MinThresh is the smallest value DectionThresh can get to       
-        MinThresh;
+        MinThresh = 10;
         
         %MinSpots is the smallest number of spots on a round/tile for a
         %particular colour channel for hat color channel to be deemed

@@ -5,11 +5,11 @@ function [BestShift,BestScore,ChangedSearchRange] = get_initial_shift2(o, y, x0,
 % image and the anchor channel binary image
 %
 % inputs:
-% y is a cell containing the centered YXZ location of all spots in round r 
+% y is a cell containing the YXZ location of all spots in round r 
 % , colour channel c for all tiles in units of XY pixels in find_spots. In
 % register, y is equivalent to x0 but for another tile.
 %
-% x0 is a cell containing the non centered YXZ location of spots in the 
+% x0 is a cell containing the YXZ location of spots in the 
 % anchor channel for the current tile. Z units are Z pixels.
 %
 % Search.Y,Search.X and Search.Z are the ranges in XY and Z pixel size 
@@ -24,7 +24,7 @@ function [BestShift,BestScore,ChangedSearchRange] = get_initial_shift2(o, y, x0,
 %% 
 if strcmpi(section, 'FindSpots')
     %centre anchor channel spots
-    x = (x0 - o.CentreCorrection).*[1,1,o.Zpixelsize/o.XYpixelsize];
+    x = x0.*[1,1,o.Zpixelsize/o.XYpixelsize];
     MinScore = o.FindSpotsMinScore;
     Step = o.FindSpotsStep;
     WidenSearch = o.FindSpotsWidenSearch;
