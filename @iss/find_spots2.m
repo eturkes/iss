@@ -95,8 +95,6 @@ end
 % loop through all tiles, finding PCR outputs
 fprintf('\nLocating spots in each colour channel of tile   ');
 
-%For scaling need to be centered about 0 hence subtract this
-o.CentreCorrection = [1+(o.TileSz-1)/2,1+(o.TileSz-1)/2,1+(o.nZ-1)/2];
 
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
@@ -128,10 +126,10 @@ for t=1:nTiles
             % cloud registration only, we don't use these detections to
             % detect colors, we read the colors off the
             % pointcloud-corrected positions of the spots detected in the reference round home tiles  
-            CenteredSpots = o.detect_spots(BaseIm,t,b,r) - o.CentreCorrection;
+            Spots = o.detect_spots(BaseIm,t,b,r);
             %Scale so all in terms of XY pixel size. Import for PCR as find
             %nearest neighbours
-            AllBaseLocalYXZ(t,b,r) = {CenteredSpots.*[1,1,o.Zpixelsize/o.XYpixelsize]};
+            AllBaseLocalYXZ(t,b,r) = {Spots.*[1,1,o.Zpixelsize/o.XYpixelsize]};
         end        
     end      
 end
@@ -294,7 +292,7 @@ for t=1:nTiles
             
             for t2 = MyRefTiles(:)'
                 MyBaseSpots = (ndRoundTile(:,r)==t & ndLocalTile==t2);
-                CenteredScaledMyLocalYXZ = [(ndLocalYXZ(MyBaseSpots,:) - o.CentreCorrection).*[1,1,o.Zpixelsize/o.XYpixelsize],...
+                ScaledMyLocalYXZ = [ndLocalYXZ(MyBaseSpots,:).*[1,1,o.Zpixelsize/o.XYpixelsize],...
                     ones(size(ndLocalYXZ(MyBaseSpots,:),1),1)];
                 
                 if t == t2
@@ -304,13 +302,13 @@ for t=1:nTiles
                         warning('Tile %d, channel %d, round %d has %d point cloud matches, which is below the threshold of %d.',...
                             t,b,r,o.nMatches(t,b,r),o.MinPCMatches);
                     end
-                    CenteredMyPointCorrectedYXZ = (CenteredScaledMyLocalYXZ*o.A(:,:,t,r,b));
-                    MyPointCorrectedYXZ = round(CenteredMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize] + o.CentreCorrection);
+                    ScaledMyPointCorrectedYXZ = (ScaledMyLocalYXZ*o.A(:,:,t,r,b));
+                    MyPointCorrectedYXZ = round(ScaledMyPointCorrectedYXZ.*[1,1,o.XYpixelsize/o.Zpixelsize]);
                     ndPointCorrectedLocalYXZ(MyBaseSpots,:,r,b) = MyPointCorrectedYXZ;
                     ndSpotColors(MyBaseSpots,b,r) = IndexArrayNan(BaseImSm, MyPointCorrectedYXZ');
                 else
                     [MyPointCorrectedYXZ, Error, nMatches] = o.different_tile_transform(AllBaseLocalYXZ,o.RawLocalYXZ, ...
-                        CenteredScaledMyLocalYXZ,t,t2,r,b);
+                        ScaledMyLocalYXZ,t,t2,r,b);
                     fprintf('Point cloud: ref round tile %d -> tile %d round %d base %d, %d/%d matches, error %f\n', ...
                         t, t2, r, b,  nMatches, size(o.RawLocalYXZ{t2},1), Error);
                     if nMatches<o.MinPCMatches || isempty(nMatches)

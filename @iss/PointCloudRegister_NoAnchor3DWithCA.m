@@ -9,11 +9,11 @@ function o = PointCloudRegister_NoAnchor3DWithCA(o, y, x0, nTiles, Options)     
 % is the same.
 %
 % inputs:
-% y is a cell containig the centered YX location of all spots in all rounds 
-% and colour channels for all tiles
+% y is a cell containig the YXZ location of all spots in all rounds 
+% and colour channels for all tiles in units of XY pixels
 %
-% x0 is a cell containing the non centered YX location of spots in the 
-% anchor channel for all tiles
+% x0 is a cell containing the YXZ location of spots in the 
+% anchor channel for all tiles. Z units are Z pixels.
 %
 % ToPlot: array of form [t,b,r] of specific example case to show plot of
 % for debugging purposes
@@ -23,12 +23,12 @@ function o = PointCloudRegister_NoAnchor3DWithCA(o, y, x0, nTiles, Options)     
 %%
 nD = 3;
 
-%centre anchor channel spots
+%scale anchor channel spots
 x = cell(nTiles,1);
 for t=1:nTiles
     if o.EmptyTiles(t); continue; end
-    %Center and scale z direction. Also append array of ones for translation
-    x(t) = {[(x0{t} - o.CentreCorrection).*[1,1,o.Zpixelsize/o.XYpixelsize],ones(size(x0{t},1),1)]};
+    %Scale z direction. Also append array of ones for translation
+    x(t) = {[x0{t}.*[1,1,o.Zpixelsize/o.XYpixelsize],ones(size(x0{t},1),1)]};
 end
 
 if isempty(o.PcDist)
@@ -36,7 +36,6 @@ if isempty(o.PcDist)
 end
 
 %Initialize variables
-D = o.D0;
 A = zeros(4,3,nTiles,o.nRounds,o.nBP);
 for t=1:nTiles
     for r = o.UseRounds

@@ -232,10 +232,6 @@ classdef iss
         % it is this close to the edge, because of aberrations
         ExpectedAberration = 3;
         
-        %Centre Correction is the value to be subtracted from spot
-        %positions so they are centered about 0
-        CentreCorrection;
-        
         %MinThresh is the smallest value DectionThresh can get to       
         MinThresh = 10;
         
