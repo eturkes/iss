@@ -155,10 +155,23 @@ o.UnbledCodes = UnbledCodes;
 %Comes from P(f) = P_lambda(lambda)P_hist(f-lambda*g) as f = lambda*g+background
 
 %Load histogram data - background prob distribution
-nBins = length(o.HistValues);
-HistCounts = o.HistCounts;
-nPixels = sum(HistCounts(:,1,1));
-HistProbs = HistCounts/nPixels;    
+%Need to make hist data symmetric and include all data - 0 in middle
+%This assumes -NewValMax < min(o.HistValues).
+[NonZeroValIdx,~,~] = ind2sub(size(o.HistCounts),find(o.HistCounts>0));
+NewValMax = o.HistValues(max((NonZeroValIdx)));
+o.SymmHistValues = -NewValMax:NewValMax;
+nBins = length(o.SymmHistValues);
+nPixels = sum(o.HistCounts(:,1,1));
+SymmHistCounts = zeros(nBins,o.nBP,o.nRounds);
+LastIdx = find(o.HistValues==o.SymmHistValues(end));
+if o.SymmHistValues(1)<o.HistValues(1)
+    FirstIdx = find(o.SymmHistValues==o.HistValues(1));
+    SymmHistCounts(FirstIdx:end,:,:) = o.HistCounts(1:LastIdx,:,:);
+else
+    FirstIdx = find(o.HistValues==o.SymmHistValues(1));
+    SymmHistCounts(:,:,:) = o.HistCounts(FirstIdx:LastIdx,:,:);
+end
+HistProbs = SymmHistCounts/nPixels;
 o.HistProbs = (HistProbs+o.alpha)./(1+nBins*o.alpha);
 
 %Get Lambda probability distribution for all genes

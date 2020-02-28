@@ -596,18 +596,22 @@ classdef iss
         %HistValues: The full range of pixel values;
         HistValues;
         
-        % pBledCodes(nCodes, nBP*nRounds): code vectors after modeling
-        % crosstalk and un-nomalising.
-        pBledCodes;
-        
         %alpha is used for regularisation so don't have any bins with -Inf
         %log probability.
         alpha = 1e-20;
         
+        %SymmHistValues is -max(HistValues(HistCount>0)):max(HistValues(HistCount>0)).
+        %Required as needs to be symmetric for the convolution
+        SymmHistValues;
+        
         %HistProbs(:,b,r) is the probability corresponding to each value
-        %in HistValues for channel b, round r.
+        %in SymmHistValues for channel b, round r.
         %(HistCounts/nPixels+o.alpha)./(1+nBins*o.alpha);
         HistProbs;
+        
+        % pBledCodes(nCodes, nBP*nRounds): code vectors after modeling
+        % crosstalk and un-nomalising.
+        pBledCodes;
         
         %RaylConst is the constant used in the rayleigh distribution for
         %the estimated distribution of lambda such that cSpotColors =
