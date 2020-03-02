@@ -24,12 +24,13 @@ function iss_view_spot(o, FigNo, ScoreMethod, SpotNum)
         ScoreMethod = 2;
     end
     
+    fprintf('loading channel/round images...');
     %ndRoundTile(s,r) tells us the tile spot s in the anchor round appears in
     %round r.
     %ndPointCorrectedLocalYXZ(s,:,r,b) tells us the YXZ position of spot s
     %in round r, channel b on tile ndRoundTile(s,r).
     %Good tells us which spots have non NaN cSpotColors in every
-    %round/channel
+    %round/channel    
     load(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'),'ndRoundTile','ndPointCorrectedLocalYXZ','Good');
     GoodRoundTile = ndRoundTile(Good,:);
     GoodCorrectedYXZ = ndPointCorrectedLocalYXZ(Good,:,:,:);
@@ -113,6 +114,7 @@ function iss_view_spot(o, FigNo, ScoreMethod, SpotNum)
     ylabel('Channel');
     xlabel('Round');
     
+    fprintf('done\n');
     
     if ScoreMethod == 1
         if o.SpotScore(SpotNo)>o.CombiQualThresh
