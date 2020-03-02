@@ -42,27 +42,41 @@ end
 
 if (nargin<2 || isempty(BackgroundImageFile)) && ~isempty(o.BigDapiFile) && ...
         ~isnumeric(o.BigDapiFile)
-    BackgroundImageFile = o.BigDapiFile;
-    %Load in Dapi image
-    Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
-    for z = Roi(5):Roi(6)
-        Image3D(:,:,z-Roi(5)+1) = imread(BackgroundImageFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
+    if exist(o.BigDapiFile, 'file')
+        fprintf('loading background image...');
+        BackgroundImageFile = o.BigDapiFile;
+        %Load in Dapi image
+        Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
+        for z = Roi(5):Roi(6)
+        	Image3D(:,:,z-Roi(5)+1) = imread(BackgroundImageFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
+        end
+    else
+        warning('not sure what to do with BackgroundImage, setting to off');
+        Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
     end
     
 elseif ~isempty(BackgroundImageFile) && ~isnumeric(BackgroundImageFile)
-    %Load in Dapi image
-    Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
-    for z = Roi(5):Roi(6)
-        Image3D(:,:,z-Roi(5)+1) = imread(BackgroundImageFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
+    if exist(BackgroundImageFile, 'file')
+        %Load in Dapi image
+        fprintf('loading background image...');
+        Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
+        for z = Roi(5):Roi(6)
+            Image3D(:,:,z-Roi(5)+1) = imread(BackgroundImageFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
+        end
+        fprintf('done\n');
+    else
+        warning('not sure what to do with BackgroundImage, setting to off');
+        Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
     end
     
 elseif isnumeric(BackgroundImageFile)
-    Image3D = BackgroundImageFile;
-    
-elseif isempty(o.BigDapiFile)
-    warning('not sure what to do with BackgroundImage, setting to off');
+    try
+        Image3D = BackgroundImageFile(Roi(3):Roi(4),Roi(1):Roi(2),Roi(5):Roi(6));
+    catch
+        warning('Background Image wrong size - setting to off');
+        Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
+    end
 end
-
 
 
 S.FigNo = 93454;
