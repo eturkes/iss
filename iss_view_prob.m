@@ -4,8 +4,9 @@ function SpotNo = iss_view_prob(o, FigNo, Norm, SpotNum)
     %spot.
     %Now have option for different normalisations
     %Norm = 1: Raw Colors
-    %Norm = 2: Normalised by percentile for each round and color channel
-    %and then so each round has unit norm
+    %Norm = 2: Normalised by o.SpotNormPrctile in each colour channel and round,
+    %then if o.CallSpotsCodeNorm='WholeCode', normalise so whole code has L2 norm
+    %of 1 but if o.CallSpotsCodeNorm='Round', normalise so each round has L2 norm of 1.
     %Norm = 3: Normalised by percentile for each color channel across all
     %rounds
     

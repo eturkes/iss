@@ -289,6 +289,13 @@ classdef iss
         % rounds.
         BleedMatrixType = 'Single';
         
+        % This controls how to normalise the spot and bled codes in o.call_spots.
+        % If CallSpotsCodeNorm == 'Round', each round of code will have
+        % L2 norm of 1. Otherwise, whole code will have L2 norm of 1.
+        % Might want to use 'Round', as this means the contribution to each round
+        % is the same which is what we expect from the UnbledCodes.
+        CallSpotsCodeNorm = 'WholeCode';
+        
         % score and intensity thresholds to plot a spot (combi codes)
         CombiQualThresh = .7;         
         CombiIntensityThresh = .1;

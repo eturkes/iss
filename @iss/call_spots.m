@@ -167,7 +167,11 @@ for i=1:nCodes
     end
 end
 
-if 1 % 0 to just use original codes
+%Do code normalisation
+FlatSpotColors = SpotColors(:,:);
+o.SpotIntensity = sqrt(nansum(FlatSpotColors.^2,2));
+
+if strcmpi(o.CallSpotsCodeNorm,'Round')
     %Normalise so norm in each round is 1
     NormBledCodes = reshape(BledCodes,[nCodes,o.nBP,nRounds]);
     for g=1:nCodes
@@ -178,10 +182,7 @@ if 1 % 0 to just use original codes
     end
     NormBledCodes = reshape(NormBledCodes,[nCodes,o.nBP*nRounds]);
     
-    nSpots = size(SpotColors,1);
-    FlatSpotColors = SpotColors(:,:);
-    o.SpotIntensity = sqrt(nansum(FlatSpotColors.^2,2));
-    
+    nSpots = size(SpotColors,1); 
     NormSpotColors = SpotColors;
     for s=1:nSpots
         for r=1:nRounds
@@ -191,20 +192,14 @@ if 1 % 0 to just use original codes
     end
     NormFlatSpotColors = NormSpotColors(:,:);
     
-    %Get rid of NaN values
-    NormFlatSpotColors(isnan(NormFlatSpotColors)) = 0;
-    NormBledCodes(isnan(NormBledCodes)) = 0;    
-    SpotScores = NormFlatSpotColors * NormBledCodes';
-    
 else
-    % HACK ALERT
-    NormBledCodes = bsxfun(@rdivide, BledCodes(:,1:20), sqrt(sum(BledCodes(:,1:20).^2,2)));
-    FlatSpotColors = SpotColors(:,1:20);
-    o.SpotIntensity = sqrt(sum(FlatSpotColors.^2,2));
-    NormFlatSpotColors = bsxfun(@rdivide, FlatSpotColors, o.SpotIntensity);
-
-    SpotScores = NormFlatSpotColors * NormBledCodes';
+    NormBledCodes = bsxfun(@rdivide, BledCodes, sqrt(sum(BledCodes.^2,2)));
+    NormFlatSpotColors = bsxfun(@rdivide, FlatSpotColors, o.SpotIntensity);    
 end
+%Get rid of NaN values
+NormFlatSpotColors(isnan(NormFlatSpotColors)) = 0;
+NormBledCodes(isnan(NormBledCodes)) = 0;
+SpotScores = NormFlatSpotColors * NormBledCodes';
 
 %Store deviation in spot scores - can rule out matches based on a low
 %deviation.
