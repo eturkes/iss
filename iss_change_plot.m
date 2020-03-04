@@ -10,6 +10,7 @@ function iss_change_plot(o,Method,GenesToShow)
 %[{'Npy'},{'Pvalb'}]. It is case sensitive.
 
 S = evalin('base', 'issPlot3DObject');
+S.ZThick = o.PlotZThick;
 figure(S.FigNo);
 h = findobj('type','line'); %KEY LINES: DELETE EXISTING SCATTER PLOTS SO CHANGE_SYMBOLS WORKS
 delete(h);

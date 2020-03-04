@@ -302,6 +302,11 @@ classdef iss
         CombiDevThresh = 0.07;
         CombiAnchorsReq = 4; % need at least this many anchor chans above threshold
         
+        %On a particular zPlane in o.plot3D, all spots that exceed the
+        %threshold with z coordinate in range
+        %zPlane-PlotZThick:zPlane+PlotZThick are shown on that zPlane.
+        PlotZThick = 0;
+        
         nRedundantRounds = 0;
         RedundantPseudobases = {'AC', 'GT'}; 
 %         RedundantCodes = {...

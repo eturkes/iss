@@ -14,19 +14,22 @@ function SpotNo = iss_view_codes(o, FigNo, Norm, SpotNum)
         if nargin>=2
             figure(FigNo);
         end
-        CrossHairColor = [1,1,1];   %Make white as black background
-        xy = ginput_modified(1,CrossHairColor);
-        try
-            zPlane = evalin('base', 'issPlot3DZPlane');     
-            [~,SpotNo] = min(sum(abs(o.SpotGlobalYXZ-[xy(2),xy(1),zPlane]),2));
-        catch
-            [~,SpotNo] = min(sum(abs(o.SpotGlobalYXZ(:,1:2)-[xy(2),xy(1)]),2));
-        end
+        CrossHairColor = [1,1,1];   %Make white as black background        
+        xy = ginput_modified(1,CrossHairColor);        
+        S = evalin('base', 'issPlot3DObject');  
+        InRoi = all(int64(round(S.SpotYXZ))>=S.Roi([3 1 5]) & round(S.SpotYXZ)<=S.Roi([4 2 6]),2);
+        PlotSpots = find(InRoi & S.QualOK);         %Only consider spots that can be seen in current plot
+        [~,SpotIdx] = min(sum(abs(o.SpotGlobalYXZ(PlotSpots,1:2)-[xy(2),xy(1)]),2));
+        SpotNo = PlotSpots(SpotIdx);
     end
     CodeNo = o.SpotCodeNo(SpotNo);
     
+    if nargin<3 || isempty(Norm)
+        Norm = 1;
+    end
+    
     %Different Normalisations
-    if isempty(Norm) | Norm == 1
+    if isempty(Norm) || Norm == 1
         cSpotColors = o.cSpotColors;
         cBledCodes = o.pBledCodes;
         if isempty(o.pBledCodes)
