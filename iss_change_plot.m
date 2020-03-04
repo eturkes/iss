@@ -1,4 +1,4 @@
-function iss_change_plot(o,Method)
+function iss_change_plot(o,Method,GenesToShow)
 %Given issPlot3DObject, this function lets you change the details
 %of the plot without closing the figure e.g. you can change
 %o.CombiQualThresh or issPlot3DObject.ZThick to change the threshold value and the number
@@ -6,28 +6,49 @@ function iss_change_plot(o,Method)
 %If Method == 'Prob', this changes the gene assignments to those given by
 %the probability method rather than the dot product. In this case
 %o.pScoreThresh is the threshold.
+%GenesToShow is a cell of gene names that you want to see e.g.
+%[{'Npy'},{'Pvalb'}]. It is case sensitive.
 
 S = evalin('base', 'issPlot3DObject');
 figure(S.FigNo);
 h = findobj('type','line'); %KEY LINES: DELETE EXISTING SCATTER PLOTS SO CHANGE_SYMBOLS WORKS
 delete(h);
-issPlot3DZPlane = evalin('base', 'issPlot3DZPlane');  %Curent Zplane
 
-
-if strcmpi('Prob',Method)
-    S.SpotGeneName = o.GeneNames(o.pSpotCodeNo);
-    S.uGenes = unique(S.SpotGeneName);
-    % which ones pass quality threshold (combi first)
-    S.QualOK = o.quality_threshold_prob;
+if nargin<3 || isempty(GenesToShow)
+    GenesToShow = o.GeneNames;
+    if ~isfield(S,'GeneNoToShow')
+        %Only change if not previosuly given GenesToShow
+        S.GeneNoToShow = find(ismember(o.GeneNames,GenesToShow));
+    end
 else
-    S.SpotGeneName = o.GeneNames(o.SpotCodeNo);
-    S.uGenes = unique(S.SpotGeneName);
-    % which ones pass quality threshold (combi first)
-    S.QualOK = o.quality_threshold;
+    S.GeneNoToShow = find(ismember(o.GeneNames,GenesToShow));
 end
+
+if nargin<2 || isempty(Method)  
+    if strcmpi(S.CallMethod,'DotProduct')
+        S.QualOK = o.quality_threshold & ismember(o.SpotCodeNo,S.GeneNoToShow);
+    elseif strcmpi(S.CallMethod,'Prob')
+        S.QualOK = o.quality_threshold_prob & ismember(o.pSpotCodeNo,S.GeneNoToShow);
+    end
+else
+    if strcmpi('Prob',Method)
+        S.SpotGeneName = o.GeneNames(o.pSpotCodeNo);
+        S.uGenes = unique(S.SpotGeneName);
+        % which ones pass quality threshold (combi first)
+        S.QualOK = o.quality_threshold_prob & ismember(o.pSpotCodeNo,S.GeneNoToShow);
+        S.CallMethod = 'Prob';
+    else
+        S.SpotGeneName = o.GeneNames(o.SpotCodeNo);
+        S.uGenes = unique(S.SpotGeneName);
+        % which ones pass quality threshold (combi first)
+        S.QualOK = o.quality_threshold & ismember(o.SpotCodeNo,S.GeneNoToShow);
+        S.CallMethod = 'DotProduct';
+    end
+end
+
 %S.SpotYXZ = o.SpotGlobalYXZ;
 %S.Roi is the Roi for the current Z plane
-S.Roi(5:6) = [issPlot3DZPlane-S.ZThick,issPlot3DZPlane+S.ZThick];
+S.Roi(5:6) = [S.CurrentZ-S.ZThick,S.CurrentZ+S.ZThick];
 InRoi = all(int64(round(S.SpotYXZ))>=S.Roi([3 1 5]) & round(S.SpotYXZ)<=S.Roi([4 2 6]),2);
 PlotSpots = find(InRoi & S.QualOK);
 [~, S.GeneNo] = ismember(S.SpotGeneName(PlotSpots), S.uGenes);
@@ -55,5 +76,5 @@ else
     set(gcf, 'InvertHardcopy', 'off');    
 end
 
-assignin('base','issPlot3DZPlane',S.Roi(5)+S.ZThick)
+S.CurrentZ = S.Roi(5)+S.ZThick;
 assignin('base','issPlot3DObject',S)

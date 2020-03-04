@@ -79,8 +79,13 @@ elseif isnumeric(BackgroundImageFile)
 end
 
 
-S.FigNo = 93454;
-S.fh = figure(93454);set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
+try
+    S.FigNo = 93454;
+    clf(S.FigNo)
+catch
+    S.FigNo = 93454;
+end
+S.fh = figure(S.FigNo);set(S.fh,'units','pixels','position',[500 200 800 600]);  %Left, Bottom, Width, Height
 set(gcf, 'color', 'k');
 set(gca, 'color', 'k');
 
@@ -133,7 +138,8 @@ else
     set(gcf, 'InvertHardcopy', 'off');    
 end
 
-assignin('base','issPlot3DZPlane',S.MinZ)
+S.CallMethod = 'DotProduct';
+S.CurrentZ = S.MinZ;
 assignin('base','issPlot3DObject',S)
 
 S.sl = uicontrol('style','slide',...
@@ -194,7 +200,7 @@ else
 end
 
 %Update current Z position in woprkspace so can use for iss_view_codes
-assignin('base','issPlot3DZPlane',ZPlane)
+S.CurrentZ = ZPlane;
 assignin('base','issPlot3DObject',S)
 
 
