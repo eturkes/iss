@@ -1,4 +1,4 @@
-function plot3D(o, BackgroundImageFile, ZThick, Roi)
+function plot3D(o, BackgroundImageFile, Roi)
 % o.plot(BackgroundImage, Roi)
 %
 % plot the results of in situ sequencing spot detection. 
@@ -12,7 +12,7 @@ function plot3D(o, BackgroundImageFile, ZThick, Roi)
 % Roi = [xmin xmax ymin ymax zmin zmax] shows only this part. Whole thing
 % shown if empty or missing. Must be integers, xmin and ymin must be 1
 %
-% All spots within +/- ZThick of the current Z plane will be shown on that
+% All spots within +/- o.PlotZThick of the current Z plane will be shown on that
 % Z plane. Default is 0
 %
 % sizes can be a vector or a scalar - only used for scatter, which isn't
@@ -20,12 +20,6 @@ function plot3D(o, BackgroundImageFile, ZThick, Roi)
 % 
 % Kenneth D. Harris, 29/3/17
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
-
-if nargin<3 || isempty(ZThick)
-    S.ZThick = 0;
-else
-    S.ZThick = ZThick;
-end
 
 if nargin<4 || isempty(Roi)
     Roi = round([1, max(o.SpotGlobalYXZ(:,2)), ...
@@ -50,6 +44,7 @@ if (nargin<2 || isempty(BackgroundImageFile)) && ~isempty(o.BigDapiFile) && ...
         for z = Roi(5):Roi(6)
         	Image3D(:,:,z-Roi(5)+1) = imread(BackgroundImageFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
         end
+        fprintf('done\n');
     else
         warning('not sure what to do with BackgroundImage, setting to off');
         Image3D = zeros(Roi(4),Roi(2),Roi(6)-Roi(5)+1,'uint16');
@@ -109,6 +104,7 @@ S.uGenes = unique(S.SpotGeneName);
 S.QualOK = o.quality_threshold;
 S.SpotYXZ = o.SpotGlobalYXZ;
 %S.Roi is the Roi for the current Z plane
+S.ZThick = o.PlotZThick;
 S.Roi = [Roi(1:4),S.MinZ-S.ZThick,S.MinZ+S.ZThick];
 S.ZRange = Roi(6)-Roi(5);
 InRoi = all(int64(round(S.SpotYXZ))>=S.Roi([3 1 5]) & round(S.SpotYXZ)<=S.Roi([4 2 6]),2);
