@@ -30,7 +30,7 @@ o.bpLabels = {'0', '1', '2', '3','4','5','6'}; %order of bases
 %These specify the dimensions of the filter. R1 should be approximately the
 %size of the spot in the respective direction and R2 should be double this.
 o.ExtractR1 = 3;
-o.ExtractR2 = 25;
+o.ExtractR2 = 25;           %NOT SURE ABOUT THIS. IN 2D MUCH BETTER WITH 6
 
 o.DapiR1YX = 20;
 o.DapiR1Z = 9;
@@ -121,6 +121,7 @@ o.CodeFile = '\\zserver\Data\ISS\codebook_73gene_6channels_2col.txt';
 o.GeneAnchorChannelFile = "...\GeneSplitAnchorChannel.mat";
 
 %run code
+o.CallSpotsCodeNorm = 'WholeCode';      %Or 'Round'
 o = o.call_spots;
 o = o.call_spots_prob;
 
@@ -128,7 +129,7 @@ save(fullfile(o.OutputDirectory, 'oCall_spots'), 'o', '-v7.3');
 
 %% plot results
 
-o.CombiQualThresh = 4;
+o.CombiQualThresh = 0.7;
 
 Roi = round([1, max(o.SpotGlobalYXZ(:,2)), ...
     1, max(o.SpotGlobalYXZ(:,1)),...
@@ -138,8 +139,8 @@ for z = Roi(5):Roi(6)
     BackgroundImage(:,:,z-Roi(5)+1) = imread(o.BigDapiFile, z,'PixelRegion', {Roi(3:4), Roi(1:2)});
 end
 
-ZThick=0;           %See all spots from ZPlane+/- ZThick on single plane
-S = o.plot3D(BackgroundImage,ZThick);       %plot from call_spots
+o.PlotZThick=0;           %See all spots from o.PlotZThick+/- o.PlotZThick on single plane
+o.plot3D(BackgroundImage);       %plot from call_spots
 
 %Can interactively change plot by changing o or S.ZThick and then running
 %iss_change_plot(o,'CallSpotsMethod')
