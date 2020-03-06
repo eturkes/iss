@@ -4,7 +4,7 @@ function QualOK = quality_threshold_prob(o)
 % threshold
 
 QualOK = (o.pSpotScore>o.pScoreThresh & o.pSpotIntensity>0 | ...
-o.pSpotIntensity>o.pIntensityThresh & o.pLogProb>o.pLogProbThresh & o.pSpotScore+o.pSpotScoreDev>o.pDevThresh);
+o.pSpotIntensity>o.pIntensityThresh & o.pLogProbOverBackground>o.pLogProbThresh & o.pSpotScore+o.pSpotScoreDev>o.pDevThresh);
 
 %Ensure spot was detected on correct channel
 if ~isempty(o.cSpotAnchorChannel)
