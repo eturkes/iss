@@ -41,6 +41,10 @@ o.ExtractScale = 2;
 o.DapiScale = 10;
 o.TilePixelValueShift = 15000;
 
+%Max time (seconds) to wait for raw .nd2 files to be obtained
+o.MaxWaitTime1 = 60;      %Less time for round 1 incase name is wrong
+o.MaxWaitTime = 21600;  
+
 %run code
 o = o.extract_and_filter;           %This requires a GPU
 %o = o.extract_and_filter_NoGPU;     %This doesn't use a GPU but is slower
