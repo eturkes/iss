@@ -194,7 +194,7 @@ function o = extract_and_filter_NoGPU(o)
                     %Finds o.ExtractScale from first image and uses this
                     %value for the rest
                     if strcmpi(o.ExtractScale, 'auto')
-                        o.ExtractScale = 10000/max(IFS(:));
+                        o.ExtractScale = 30000/max(IFS(:));
                     end
                     IFS = IFS*o.ExtractScale;
                     

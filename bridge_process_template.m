@@ -45,8 +45,11 @@ o.MaxWaitTime1 = 60;      %Less time for round 1 incase name is wrong
 o.MaxWaitTime = 21600;  
 
 %run code
-o = o.extract_and_filter;           %This requires a GPU
-%o = o.extract_and_filter_NoGPU;     %This doesn't use a GPU but is slower
+try
+    o = o.extract_and_filter;
+catch
+    o = o.extract_and_filter_NoGPU;
+end
 save(fullfile(o.OutputDirectory, 'oExtract'), 'o', '-v7.3');
 
 %% register
