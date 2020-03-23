@@ -2,7 +2,7 @@ function o = extract_and_filter(o)
 % create tiff files for each tile that are top-hat filtered versions of
 % original czi files
 % This uses a GPU for speed
-
+    GPU_test = gpuArray([1]);       %So if no Parallel Computing Toolbox, fails straight away
     o.TileFiles = cell(o.nRounds+o.nExtraRounds,1,1,1); % 1,1,1 because we don't yet know how many tiles
     
     %New filter
@@ -198,7 +198,7 @@ function o = extract_and_filter(o)
                     %Finds o.ExtractScale from first image and uses this
                     %value for the rest
                     if strcmpi(o.ExtractScale, 'auto')
-                        o.ExtractScale = 10000/max(IFS(:));
+                        o.ExtractScale = 30000/max(IFS(:));
                     end
                     IFS = IFS*o.ExtractScale;
                     
