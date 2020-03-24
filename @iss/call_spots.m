@@ -10,9 +10,6 @@ function o = call_spots(o)
 % Using o.UseChannels and o.UseRounds, you can do spot calling
 % without using certain rounds and colour channels.
 %
-% This does the final normalisation differently. Now each round has norm 1
-% not the whole code.
-%
 % Kenneth D. Harris, 29/3/17
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
 
@@ -35,74 +32,96 @@ nRounds = size(o.UseRounds,2);
 %o.cSpotIsolated = o.cSpotIsolated(Good);
 %o.SpotGlobalYX = o.SpotGlobalYX(Good,:);
 
-%Filter out high values in problematic round 3 colour 1 in bottom right
-%Bad = o.SpotGlobalYX(:,1) > 479 & o.SpotGlobalYX(:,1) < 1878 & o.SpotGlobalYX(:,2)>6695 &...
-%    o.cSpotColors(:,1,3)>1000;      
-%o.cSpotColors = o.cSpotColors(Bad==0,:,:);
-%o.cSpotIsolated = o.cSpotIsolated(Bad==0);
-%o.SpotGlobalYX = o.SpotGlobalYX(Bad==0,:);
-p = prctile(o.cSpotColors, o.SpotNormPrctile);
-SpotColors = bsxfun(@rdivide, o.cSpotColors, p);
 
-% now we cluster the intensity vectors to estimate the Bleed Matrix
-BleedMatrix = zeros(nChans,nChans,nRounds); % (Measured, Real, Round)
+%Normalise each colour channel by a percentile as to correct for weaker
+%colour channels
 if strcmpi(o.BleedMatrixType,'Separate')
-    for r=o.UseRounds
-        m = squeeze(SpotColors(o.cSpotIsolated,o.UseChannels,r)); % data: nCodes by nBases
-    
-        [Cluster, v, s2] = ScaledKMeans(m, eye(nChans));
-        for i=1:nChans
-            BleedMatrix(:,i,find(o.UseRounds==r)) = v(i,:) * sqrt(s2(i));
-        end
-    end
-    
+    p = prctile(o.cSpotColors, o.SpotNormPrctile);
 elseif strcmpi(o.BleedMatrixType,'Single')
-    m = permute(squeeze(squeeze(SpotColors(o.cSpotIsolated,o.UseChannels,o.UseRounds))),[1 3 2]);
-    m = squeeze(reshape(m,[],size(m,1)*nRounds,nChans));
-    [Cluster, v, s2] = ScaledKMeans(m, eye(nChans));
-    for i=1:nChans
-        BleedMatrix(:,i,1) = v(i,:) * sqrt(s2(i));
-    end
-    for r=2:nRounds
-        BleedMatrix(:,:,r) = BleedMatrix(:,:,1);
-    end
-    
+    p = zeros(1,o.nBP,o.nRounds);
+    for b = 1:o.nBP
+        bSpotColors = o.cSpotColors(:,b,:);
+        p(:,b,:) = prctile(bSpotColors(:), o.SpotNormPrctile);
+    end    
 else
     warning('Wrong o.BleedMatrixType entry, should be either Separate or Single')
 end
 
-if o.Graphics
-    figure(98043764); clf
-    for i=1:nRounds
-        subplot(ceil(nRounds/3),3,i); 
-        imagesc(BleedMatrix(:,:,i)); 
-        caxis([0 1]); 
-        title(sprintf('Cycle %d', o.UseRounds(i))); 
-        set(gca, 'xtick', 1:nChans);
-        set(gca, 'XTickLabel', o.bpLabels(o.UseChannels));
-        set(gca, 'ytick', 1:nChans);
-        set(gca, 'yTickLabel', o.bpLabels(o.UseChannels));
-        if i==4
-            xlabel('Actual')
-            ylabel('Measured');
+
+pScale = median(p(:))/10;
+DiagMeasure = 0;
+nTries = 1;
+while DiagMeasure<nChans && nTries<nChans
+    SpotColors = bsxfun(@rdivide, o.cSpotColors, p);
+    
+    % now we cluster the intensity vectors to estimate the Bleed Matrix
+    BleedMatrix = zeros(nChans,nChans,nRounds); % (Measured, Real, Round)
+    if strcmpi(o.BleedMatrixType,'Separate')
+        for r=o.UseRounds
+            m = squeeze(SpotColors(o.cSpotIsolated,o.UseChannels,r)); % data: nCodes by nBases
+            
+            [Cluster, v, s2] = ScaledKMeans(m, eye(nChans));
+            for i=1:nChans
+                BleedMatrix(:,i,find(o.UseRounds==r)) = v(i,:) * sqrt(s2(i));
+            end
         end
+        
+    elseif strcmpi(o.BleedMatrixType,'Single')
+        m = permute(squeeze(squeeze(SpotColors(o.cSpotIsolated,o.UseChannels,o.UseRounds))),[1 3 2]);
+        m = squeeze(reshape(m,[],size(m,1)*nRounds,nChans));
+        [Cluster, v, s2] = ScaledKMeans(m, eye(nChans));
+        for i=1:nChans
+            BleedMatrix(:,i,1) = v(i,:) * sqrt(s2(i));
+        end
+        for r=2:nRounds
+            BleedMatrix(:,:,r) = BleedMatrix(:,:,1);
+        end
+        
+    else
+        warning('Wrong o.BleedMatrixType entry, should be either Separate or Single')
     end
-%     subplot(2,3,6);
-%     caxis([0 1]); 
-%     axis off
-%     colormap hot
-% %     colorbar
+    
+    if o.Graphics
+        figure(98043715+nTries); clf
+        for i=1:nRounds
+            subplot(ceil(nRounds/3),3,i);
+            imagesc(BleedMatrix(:,:,i));
+            caxis([0 1]);
+            title(sprintf('Round %d', o.UseRounds(i)));
+            set(gca, 'xtick', 1:nChans);
+            set(gca, 'XTickLabel', o.bpLabels(o.UseChannels));
+            set(gca, 'ytick', 1:nChans);
+            set(gca, 'yTickLabel', o.bpLabels(o.UseChannels));
+            if i==4
+                xlabel('Actual')
+                ylabel('Measured');
+            end
+        end
+        drawnow;
+        %     subplot(2,3,6);
+        %     caxis([0 1]);
+        %     axis off
+        %     colormap hot
+        % %     colorbar
+    end
+    
+    %If bleed matrix not diagonal, try modifying percentiles of weakest
+    %channels
+    [~,CurrentBleedMatrixMaxChannel] = max(BleedMatrix(:,:,1));
+    DiagMeasure = sum(CurrentBleedMatrixMaxChannel==1:nChans);      %In column i, max square should be in row i if diagonal
+    [~,MinIntensityChannel] = min(mean(squeeze(p)'));
+    p(:,MinIntensityChannel,:) = p(:,MinIntensityChannel,:)*pScale;
+    if DiagMeasure<nChans
+        warning('Bleed matrix not diagonal - modifying percentile of channel '+string(MinIntensityChannel-1))
+    elseif DiagMeasure>=nChans && nTries>1
+        fprintf('Bleed matrix now diagonal\n');
+    end
+    nTries = nTries+1;
 end
-
+if DiagMeasure<nChans
+    error('Bleed matrix not diagonal')
+end
 o.BleedMatrix = BleedMatrix;
-
-%Save unnormalised BleedMatrix too
-o.pBleedMatrix = zeros(nChans,nChans,nRounds);
-for r=1:o.nRounds
-    for b=1:o.nBP
-        o.pBleedMatrix(b,:,r) = p(:,b,r)*BleedMatrix(b,:,r);
-    end
-end
 
 %Load in anchor channel for each gene
 GeneAnchorChannelInfo = load(o.GeneAnchorChannelFile);
@@ -204,6 +223,7 @@ end
 NormFlatSpotColors(isnan(NormFlatSpotColors)) = 0;
 NormBledCodes(isnan(NormBledCodes)) = 0;
 SpotScores = NormFlatSpotColors * NormBledCodes';
+
 
 %Store deviation in spot scores - can rule out matches based on a low
 %deviation.
