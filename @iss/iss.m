@@ -73,7 +73,7 @@ classdef iss
         % the decimal points, should multiply image so max pixel number is
         % in the 10,000s (less than 65,536). If 'auto', it sets to
         % 10,000/max(Tile 1 round 1 colour channel 1).
-        ExtractScale = 2;
+        ExtractScale = 'auto';
         %ExtractScale = 5*10^7;
         
         % TilePixelValueShift is added onto every tile when it is saved and 
@@ -459,6 +459,9 @@ classdef iss
         
         % BigDapiFile is full path of stitched DAPI image (tiff format)
         BigDapiFile;
+        
+        % BigAnchorFile is full path of stitched Anchor Channel image (tiff format)
+        BigAnchorFile;
         
         % CellMapFile is full path of cell map (.mat format)
         CellMapFile;
