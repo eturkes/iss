@@ -288,15 +288,16 @@ function o = extract_and_filter(o)
     end
     
     %Plot histograms to make sure they are smooth
+    nPixels = sum(o.HistCounts(:,1,1));
     if o.Graphics       
         figure(43291);
         index = 1;
         for r=1:o.nRounds
             for b=1:nChannels
                 subplot(o.nRounds,nChannels,index)
-                histogram('BinEdges',[o.HistValues-0.5,max(o.HistValues)+0.5],'BinCounts',o.HistCounts(:,b,r),'DisplayStyle','stairs');
-                xlim([-100,100]);
-                ylim([0,max(o.HistCounts(:,b,r))]);
+                histogram('BinEdges',[o.HistValues-0.5,max(o.HistValues)+0.5],'BinCounts',o.HistCounts(:,b,r)/nPixels,'DisplayStyle','stairs');
+                xlim([-1000,1000]);
+                ylim([0,max(o.HistCounts(:,b,r))/nPixels]);
                 if b==4
                     title(strcat('Round ',num2str(r)));
                 end
