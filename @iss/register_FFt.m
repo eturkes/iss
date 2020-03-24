@@ -1,4 +1,4 @@
-function o=register(o)
+function o=register_FFt(o)
 % SLOW - DON'T RECOMMEND USING THIS VERSION
 % o=iss_register(o)
 %
@@ -172,8 +172,19 @@ AnchorOrigin = round(o.TileOrigin(:,1:2,rr));           %Only consider YX coordi
 ZOrigin = round(o.TileOrigin(:,3,rr));                  %To align between Z planes if necessary
 MaxTileLoc = max(AnchorOrigin);
 MaxZ = ceil((max(ZOrigin) + o.nZ));
+
 o.BigDapiFile = fullfile(o.OutputDirectory, 'background_image.tif');
-AnchorFile = fullfile(o.OutputDirectory, 'anchor_image.tif');
+o.BigAnchorFile = fullfile(o.OutputDirectory, 'anchor_image.tif');
+if exist(o.BigDapiFile, 'file')
+    SaveDapi = false;
+else
+    SaveDapi = true;
+end
+if exist(o.BigAnchorFile, 'file')
+    SaveAnchor = false;
+else
+    SaveAnchor = true;
+end
 
 for z = 1:MaxZ
     BigDapiIm = zeros(ceil((MaxTileLoc + o.TileSz)), 'uint16');
@@ -200,8 +211,12 @@ for z = 1:MaxZ
             floor(MyOrigin(2))+(1:o.TileSz)) ...
             = LocalAnchorIm;
     end
-    imwrite(uint16(BigDapiIm),o.BigDapiFile,'tiff', 'writemode', 'append');
-    imwrite(uint16(BigAnchorIm), AnchorFile,'tiff', 'writemode', 'append');    
+    if SaveDapi
+        imwrite(uint16(BigDapiIm),o.BigDapiFile,'tiff', 'writemode', 'append');
+    end
+    if SaveAnchor
+        imwrite(uint16(BigAnchorIm), o.BigAnchorFile,'tiff', 'writemode', 'append'); 
+    end
 end
 
 

@@ -214,7 +214,17 @@ MaxTileLoc = max(AnchorOrigin);
 MaxZ = ceil((max(ZOrigin) + o.nZ));
 
 o.BigDapiFile = fullfile(o.OutputDirectory, 'background_image.tif');
-AnchorFile = fullfile(o.OutputDirectory, 'anchor_image.tif');
+o.BigAnchorFile = fullfile(o.OutputDirectory, 'anchor_image.tif');
+if exist(o.BigDapiFile, 'file')
+    SaveDapi = false;
+else
+    SaveDapi = true;
+end
+if exist(o.BigAnchorFile, 'file')
+    SaveAnchor = false;
+else
+    SaveAnchor = true;
+end
 
 %saving options
 options.big=true;
@@ -259,8 +269,12 @@ for z = 1:MaxZ
             floor(MyOrigin(2))+(1:o.TileSz)) ...
             = LocalAnchorIm;
     end
-    saveastiff(uint16(BigDapiIm), o.BigDapiFile, options);
-    saveastiff(uint16(BigAnchorIm), AnchorFile, options);
+    if SaveDapi
+        saveastiff(uint16(BigDapiIm), o.BigDapiFile, options);
+    end
+    if SaveAnchor
+        saveastiff(uint16(BigAnchorIm), o.BigAnchorFile, options);
+    end
 end
 fprintf('\n');
 
