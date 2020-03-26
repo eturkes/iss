@@ -86,7 +86,7 @@ PeakPos = [yPeak, xPeak, zPeak];
 %% Isolation Thresholding
 
 if isstr(o.IsolationThresh) && ismember(o.IsolationThresh, {'auto', 'multithresh', 'medianx10'})
-    IsolationThresh = DetectionThresh/5;
+    IsolationThresh = -DetectionThresh/5;
 else
     IsolationThresh = o.IsolationThresh;
 end

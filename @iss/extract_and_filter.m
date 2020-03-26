@@ -208,7 +208,7 @@ function o = extract_and_filter(o)
                 
                 if r ~= o.ReferenceRound  
                     %Get histogram data
-                    IFS = int16(IFS);
+                    IFS = int32(IFS);
                     %AbridgedBaseIm = IFS(:,:,8:15);
                     o.HistCounts(:,c,r) = o.HistCounts(:,c,r)+gather(histc(IFS(:),o.HistValues));
                 end
