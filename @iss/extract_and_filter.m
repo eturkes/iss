@@ -163,7 +163,7 @@ function o = extract_and_filter(o)
             if (r ~=o.ReferenceRound && strcmpi(o.ExtractScale, 'auto')) ||...
                     (r==o.ReferenceRound && strcmpi(o.ExtractScaleAnchor, 'auto'))  
                 
-                o = o.get_extract_scale(nChannels,nZstacks,bfreader,SE,DapiSE,r,t);
+                o = o.get_extract_scale(nChannels,nZstacks,bfreader,gather(SE),DapiSE,r,t);
                 if r==o.ReferenceRound; ExtractScale = o.ExtractScaleAnchor;
                 else; ExtractScale = o.ExtractScale; end
                 
