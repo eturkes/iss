@@ -39,6 +39,26 @@ You need to make sure that ```o.FileBase{```[```o.ReferenceRound```](https://git
 <img src="DebugImages/README/CodeBook.png" width = "250"> 
 </p>
 
+## Running with a subset of tiles
+Running the pipeline with the whole set of tiles can be quite time consuming so it is sometimes desirable to run the pipeline on a subset of tiles. You can do this via the [```o.EmptyTiles```](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/%40iss/iss.m#L455-L456) variable. For example, to only use tiles 1 and 2, you can add the [following lines](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/bridge_process_template.m#L62-L65) to [bridge_process_template.m](https://github.com/jduffield65/iss/blob/PixelBased/bridge_process_template.m):
+
+```matlab
+o.EmptyTiles(:) = 1;
+UseTiles = [1,2];
+o.EmptyTiles(UseTiles) = 0;
+```
+
+All tiles ```t```, such that ```o.EmptyTiles(t) = 1``` will be skipped. You can add this at any stage of the pipeline, after [```extract_and_filter```](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/bridge_process_template.m#L59). If you add it before the [registration step](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/bridge_process_template.m#L99), then if more than one tile is specified, they should each have at least one neighbour. An example showing three valid entries and one incorrect entry of ```o.EmptyTiles```, for a dataset consisting of 6 tiles is shown below.
+
+:heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark: | :x:
+:------------ | :-------------| :-------------| :-------------
+| ```1 1```       | ```0 1```     |   ```0 0```   |  ```0 1```      
+| ```0 0```       | ```0 1```     |   ```0 1```   |  ```1 0```      
+| ```1 1```       | ```1 1```     |   ```1 1```   |  ```1 1```     
+|Tiles 2 and 5 | Tiles 1 and 2 |  Tiles 1,2 and 4 | Tiles 1 and 5
+
+Running the full pipeline (post extract_and_filter) should take on the order of half an hour, if only one tile is selected.
+
 ## Stitching and registration parameters
 These are parameters that slightly affect how the stitching of tiles and registration between rounds and colour channels works. The default values in [bridge_process_template.m](https://github.com/jduffield65/iss/blob/master/bridge_process_template.m) should work most of the time but there are some cases when they may need altering.
 
@@ -102,6 +122,8 @@ The probability method does not involve any such normalisation so is probably th
 ### Pixel based results
 To view the [results from the pixel based method](https://github.com/jduffield65/iss/blob/849350e6f0a4742d8fd6a3e083b0ffcd81914e31/%40iss/iss.m#L743-L771), run ```iss_change_plot(o,'Pixel')```. In this case, the spots are detected differentely, but the gene assignments are still carried out using the probability method. The thresholds to use are thus: ```o.pScoreThresh``` and ```o.pIntensityThresh```. The results saved have analagous names and meanings as with the probability method, except the prefix is ```px``` instead of ```p``` e.g. ```o.pxSpotScore```.
 
+Also, the pixel based method allows for the possibility of multiple genes assigned to the same pixel. To view these overlapping genes, you can set ```o.pScoreThresh2``` to a value below 0. It has a default value of 0 meaning only genes that are the best match at each pixel can be shown. If you set it to ```o.pScoreThresh2 = -0.001;```, then it allows for spots for which ```o.pxSpotScore = 0``` i.e. the second best match at that pixel.
+
 ### Viewing specific genes
 To see the distribution of a specific gene or specific set of genes, run ```iss_change_plot(o,CallSpotsMethod,GeneNames)``` with the plot open, where ```CallSpotsMethod``` is ```'Prob'```, ```'DotProduct'``` or ```'Pixel'``` as before. GeneNames is a cell array containing the names of the genes of interest, so to see Plp1 and somatostatin  with the probability method, run ```iss_change_plot(o,'Prob',[{'Plp1'},{'Sst'}])```. The result is shown below.
 
@@ -110,6 +132,26 @@ To see the distribution of a specific gene or specific set of genes, run ```iss_
 </p>
 
 The gene names given must exactly match those names in [```o.GeneNames```](https://github.com/jduffield65/iss/blob/2ec0f5fb924c28f76b06d5d9d00bc14f88d4b2ba/%40iss/iss.m#L541) which come from the codebook. To revert to showing all genes, run with ```GeneNames=o.GeneNames``` i.e. ```iss_change_plot(o,'Prob',o.GeneNames)```. To see all genes except for Plp1 and somatostatin, run with ```GeneNames=setdiff(o.GeneNames,[{'Plp1'},{'Sst'}])```
+
+### Viewing specific spots
+To see the distribution of a specific set of spots run ```iss_change_plot(o,CallSpotsMethod,GeneNames, SpotSet)``` with the plot open. ```SpotSet``` is logical array and only spots ```s``` for which ```SpotSet(s) = 1``` are shown. This allows you to choose your own thresholding methods, which may differ from the [default ones](https://github.com/jduffield65/iss/blob/PixelBased/@iss/quality_threshold.m). An example dataset for which ```SpotSet = o.pxSpotScore>30 & o.pxSpotIntensity > 500;``` is shown below:
+
+<p float="left">
+<img src="DebugImages/README/SpecificSpots1.png" width = "450"> 
+</p>
+
+#### Clustered spots
+You can also restrict the display to spots that are clustered, this acts as a guide to where the cell locations are. To do this, run ```SpotSetClustered = get_gene_clusters(o,CallSpotsMethod,r,k,SpotSet)``` followed by ```iss_change_plot(o,CallSpotsMethod,GeneNames, SpotSetClustered)```. A cluster is required to have ```k``` spots from ```SpotSet``` to be within a distance ```r``` pixels of each other. An example with ```CallSpotsMethod = Pixel```, ```r = 7```, ```k = 3``` and ```SpotSet = o.pxSpotScore>30 & o.pxSpotIntensity > 500;``` is shown below:
+
+<p float="left">
+<img src="DebugImages/README/SpecificSpots2.png" width = "450"> 
+</p>
+
+By default, ```r = 18```, ```k = 20``` and ```SpotSet = o.quality_threshold(CallSpotsMethod)```. This is shown below for the pixel based method:
+
+<p float="left">
+<img src="DebugImages/README/SpecificSpots3.png" width = "450"> 
+</p>
 
 ### Visualising individual spots
 To view the dot product assignment of a particular gene, with the plot open, run [```iss_view_codes(o,234321,Norm)```](https://github.com/jduffield65/iss/blob/eb6d7c23acf2b59a18903511b25b34ecd756c05b/bridge_process_template.m#L119). This will cause a crosshair to appear on the plot, then just click on the spot of interest as shown below.
