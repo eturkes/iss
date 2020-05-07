@@ -104,7 +104,7 @@ S.h = zeros(size(S.uGenes));
 for i=1:length(S.uGenes)
     MySpots = PlotSpots(S.GeneNo==i);
     if any(MySpots)
-        S.h(i) = scatter(S.SpotYX(MySpots,2), S.SpotYX(MySpots,1), '.');
+        S.h(i) = plot(S.SpotYX(MySpots,2), S.SpotYX(MySpots,1), '.');
     end
 end 
 %hold off
@@ -115,7 +115,7 @@ legend off;
 set(gca, 'Clipping', 'off');
 
 if ~isempty(PlotSpots)
-    change_gene_symbols_MG(20);
+    change_gene_symbols_MG(1);
 else
     set(gcf, 'color', 'k');
     set(gcf, 'InvertHardcopy', 'off');    
