@@ -1,4 +1,4 @@
-function iss_change_plot(o,Method,GenesToShow,UseSpots)
+function iss_change_plot_MG(o,Method,GenesToShow,UseSpots)
 %Given issPlot3DObject, this function lets you change the details
 %of the plot without closing the figure e.g. you can change
 %o.CombiQualThresh or issPlot3DObject.ZThick to change the threshold value and the number
