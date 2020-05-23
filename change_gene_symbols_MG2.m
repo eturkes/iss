@@ -247,6 +247,13 @@ for i=1:n
 		end
         set(h(j), 'Marker', New_symbols{i,3});
 
+        if strcmp(New_symbols{i,1}, 'Csf1r') || strcmp(New_symbols{i,1}, 'Tmem119') || ...
+                strcmp(New_symbols{i,1}, 'P2ry12') || strcmp(New_symbols{i,1}, 'Cx3cr1') || ...
+                strcmp(New_symbols{i,1}, 'C1qB') || strcmp(New_symbols{i,1}, 'C1qC') || ...
+                strcmp(New_symbols{i,1}, 'C1qa') || strcmp(New_symbols{i,1}, 'Olfml3')
+            set(h(j), 'MarkerFaceColor', New_symbols{i,2});
+        end
+
         if MarkerSize>0
 			if strcmp(gc(l).Type, 'line')
 				set(h(j), 'MarkerSize', MarkerSize);
@@ -276,12 +283,21 @@ if MultiCol==0
     lh = legend(all_h, all_sym, 'color', 'k', 'textcolor', 'w', 'fontsize', FontSize);
     set(lh, 'color', 'k');
 else
-    ah = axes('Position', [.925 .13 .05 .8]);
+    ah = axes('Position', [.01 .13 .06 .8]);
     set(ah, 'color', 'k'); cla; hold on; box off
     set(ah, 'UserData', 'key');
     for j=1:length(Present)
         i = Present(j);
-        plot(ceil(j/MultiCol)+.1, mod(j-1,MultiCol), New_symbols{i,3}, 'Color', New_symbols{i,2});
+        if strcmp(New_symbols{i,1}, 'Csf1r') || strcmp(New_symbols{i,1}, 'Tmem119') || ...
+                strcmp(New_symbols{i,1}, 'P2ry12') || strcmp(New_symbols{i,1}, 'Cx3cr1') || ...
+                strcmp(New_symbols{i,1}, 'C1qB') || strcmp(New_symbols{i,1}, 'C1qC') || ...
+                strcmp(New_symbols{i,1}, 'C1qa') || strcmp(New_symbols{i,1}, 'Olfml3')
+            plot(ceil(j/MultiCol)+.1, mod(j-1,MultiCol), New_symbols{i,3}, 'Color', ...
+                New_symbols{i,2}, 'MarkerFaceColor', New_symbols{i,2});
+        else
+            plot(ceil(j/MultiCol)+.1, mod(j-1,MultiCol), New_symbols{i,3}, 'Color', ...
+                New_symbols{i,2});
+        end
         text(ceil(j/MultiCol)+.3, mod(j-1,MultiCol), New_symbols{i,1}, 'color', 'w', 'fontsize', FontSize);
     end
     ylim([-1 MultiCol]);

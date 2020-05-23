@@ -275,7 +275,7 @@ if MultiCol==0
     lh = legend(all_h, all_sym, 'color', 'k', 'textcolor', 'w', 'fontsize', FontSize);
     set(lh, 'color', 'k');
 else
-    ah = axes('Position', [.925 .13 .05 .8]);
+    ah = axes('Position', [.01 .13 .06 .8]);
     set(ah, 'color', 'k'); cla; hold on; box off
     set(ah, 'UserData', 'key');
     for j=1:length(Present)
