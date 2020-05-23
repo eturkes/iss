@@ -1,10 +1,20 @@
 function o = extract_and_filter(o)
 % create tiff files for each tile that are top-hat filtered versions of
 % original czi files
-    GPU_test = gpuArray([1]);       %So if no Parallel Computing Toolbox, fails straight away
+    GPU_test = gpuArray([1]);       %So if no Parallel Computing Toolbox, fails straight away%%
+%% Logging    
+    if o.LogToFile
+        diary(o.LogFile);
+        cleanup = onCleanup(@()diary('off'));
+    end
+%%
+    
     if o.ReferenceRound == o.AnchorRound && o.ReferenceChannel ~=o.AnchorChannel
         error('o.ReferenceRound = o.AnchorRound but o.ReferenceChannel is not equal to o.AnchorChannel');
     end
+    
+
+    
     o.TileFiles = cell(o.nRounds+o.nExtraRounds,1,1); % 1,1 because we don't yet know how many tiles
 
     
@@ -118,8 +128,10 @@ function o = extract_and_filter(o)
             end
             
             %New filter
-            if strcmpi(o.ExtractR1, 'auto') || strcmpi(o.ExtractR2, 'auto')
+            if strcmpi(o.ExtractR1, 'auto')
                 o.ExtractR1 = round(0.5/pixelsize);  %Gives value of 3 for pixelsize = 0.1669 of most data tested
+            end
+            if strcmpi(o.ExtractR2, 'auto')
                 o.ExtractR2 = o.ExtractR1*2;
             end
             h = -hanning(o.ExtractR2*2+1);

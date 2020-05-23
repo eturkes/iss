@@ -20,6 +20,12 @@ function o=register2(o)
 % Kenneth D. Harris, 29/3/17
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
  
+%% Logging
+
+if o.LogToFile
+    diary(o.LogFile);
+    cleanup = onCleanup(@()diary('off'));
+end
 
 %% basic variables
 rr = o.ReferenceRound;
@@ -124,7 +130,8 @@ for t=NonemptyTiles
             o.RegInfo.SingleFft.Pairs = [o.RegInfo.SingleFft.Pairs; t, t+1];
             o.RegInfo.SingleFft.OldShifts = [o.RegInfo.SingleFft.OldShifts; shift(1), shift(2)];
             o.RegInfo.SingleFft.OldScores = [o.RegInfo.SingleFft.OldScores; score];
-            [shift, score] = o.get_Fft_shift_single(t,t+1,'South');
+            [shift, score] = o.get_Fft_shift_single(t,o.ReferenceRound,o.ReferenceChannel,...
+                t+1,o.ReferenceRound,o.ReferenceChannel,'Register','South');
         end
             
         if all(isfinite(shift))
@@ -164,7 +171,8 @@ for t=NonemptyTiles
             o.RegInfo.SingleFft.Pairs = [o.RegInfo.SingleFft.Pairs; t, t+nY];
             o.RegInfo.SingleFft.OldShifts = [o.RegInfo.SingleFft.OldShifts; shift(1), shift(2)];
             o.RegInfo.SingleFft.OldScores = [o.RegInfo.SingleFft.OldScores; score];
-            [shift, score] = o.get_Fft_shift_single(t,t+nY,'East');
+            [shift, score] = o.get_Fft_shift_single(t,o.ReferenceRound,o.ReferenceChannel,...
+                t+nY,o.ReferenceRound,o.ReferenceChannel,'Register','East');
         end
  
         if all(isfinite(shift))
