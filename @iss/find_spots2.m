@@ -1,12 +1,12 @@
 function o = find_spots2(o, AllBaseLocalYX)        
-% o = o.find_spots2;
+%% o = o.find_spots2(AllBaseLocalYX);
 %
 % finds spots in all tiles using the reference channel, removes
 % duplicates in overlap regions and returns nSpots x 2 array o.SpotGlobalYX of
 % coordinates in global frame
 % 
 % Looks up colors from apporpriate files and makes nSpots x nBP x nRounds
-% array o.SpotColors
+% array o.cSpotColors
 %
 % o.Isolated is a nSpots x 1 binary array giving 1 for
 % well-isolated spots
@@ -16,8 +16,8 @@ function o = find_spots2(o, AllBaseLocalYX)
 % This finds initial shifts between rounds using point cloud not by finding 
 % the max correlation between images
 %
-% Optional second argument allows you to skip first step if already have
-% spots
+% Optional second argument, AllBaseLocalYX, allows you to skip 
+% first step if already have spots
 %
 % Kenneth D. Harris, 29/3/17
 % GPL 3.0 https://www.gnu.org/licenses/gpl-3.0.en.html
@@ -301,11 +301,7 @@ end
 
 %Compute approx new shifts from D matrices
 YXRoundTileShifts = permute(squeeze(o.D(3,:,:,1:o.nRounds)),[2,1,3]);
-%Below used to be TileOrigin-YXShifts, but I think it should be plus, as
-%when transfer from reference round to imaging round, you add shift. Hence
-%when you transfer origin from reference round to imaging round, you should
-%also add shift. Not sure though. !!!!!!!POSSIBLY BUG HERE!!!!!!!
-o.TileOrigin(:,:,1:o.nRounds) =  o.TileOrigin(:,:,rr) + YXRoundTileShifts;  
+o.TileOrigin(:,:,1:o.nRounds) =  o.TileOrigin(:,:,rr) - YXRoundTileShifts;  
 
 ndRoundTile = nan(nnd,o.nRounds);
 ndRoundYX = nan(nnd,2,o.nRounds);
