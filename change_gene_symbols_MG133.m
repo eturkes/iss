@@ -25,14 +25,14 @@ end
 
 
 % colors
-c1 =     hsv2rgb([ 1 1 1]);
+c1 =     hsv2rgb([.85 1 1]);
 c2a =    hsv2rgb([ .13 1 1]);
 c2b =    hsv2rgb([.1 1 .6]);
 c4a =    hsv2rgb([1 .5 1]);
 c4b =    hsv2rgb([1 .3 .9]);
 c5a =    hsv2rgb([1/3 1 1]);
 c5b =    hsv2rgb([.27 1 .7]);
-c6 =     hsv2rgb([.85 1 1]);
+c6 =     hsv2rgb([ 1 1 1]);
 c7a =    hsv2rgb([.55 1 1]);
 c7b =    hsv2rgb([.7 .8 1]);
 c7c =    hsv2rgb([2/3 1 1]);
