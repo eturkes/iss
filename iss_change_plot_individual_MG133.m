@@ -120,7 +120,7 @@ legend off;
 set(gca, 'Clipping', 'off');
 
 if ~isempty(PlotSpots)
-    change_gene_symbols_individual_MG133(6, 12);
+    change_gene_symbols_individual_MG133(10, 25);
 else
     set(gcf, 'color', 'k');
     set(gcf, 'InvertHardcopy', 'off');    
