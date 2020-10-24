@@ -1,4 +1,4 @@
-function iss_change_plot_contour_MG133(o,Method,GenesToShow,UseSpots)
+function iss_change_plot_contour_individual_MG150(o,Method,GenesToShow,UseSpots)
 %% iss_change_plot_contour(o,Method,GenesToShow,UseSpots)
 %
 % This function is identical to iss_change_plot(), except that it includes
@@ -121,7 +121,7 @@ legend off;
 set(gca, 'Clipping', 'off');
 
 if ~isempty(PlotSpots)
-    change_gene_symbols_MG133(3, 7);
+    change_gene_symbols_individual_MG150(4, 9);
 else
     set(gcf, 'color', 'k');
     set(gcf, 'InvertHardcopy', 'off');    

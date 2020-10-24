@@ -1,4 +1,4 @@
-function change_gene_symbols_individual_MG133(MarkerSize, FontSize, MultiCol)
+function change_gene_symbols_individual_MG150(MarkerSize, FontSize, MultiCol)
 % ChangeGeneSymbols(MarkerSize, FontSize, nPerCol);
 %
 % changes gene symbols so in situ plots look nice. 

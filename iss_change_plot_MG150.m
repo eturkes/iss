@@ -1,4 +1,4 @@
-function iss_change_plot_individual_MG133(o,Method,GenesToShow,UseSpots)
+function iss_change_plot_MG150(o,Method,GenesToShow,UseSpots)
 %% iss_change_plot(o,Method,GenesToShow,UseSpots)
 %
 % Given issPlot3DObject, this function lets you change the details
@@ -120,7 +120,7 @@ legend off;
 set(gca, 'Clipping', 'off');
 
 if ~isempty(PlotSpots)
-    change_gene_symbols_individual_MG133(4, 9);
+    change_gene_symbols_MG150(2, 4);
 else
     set(gcf, 'color', 'k');
     set(gcf, 'InvertHardcopy', 'off');    
