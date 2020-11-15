@@ -133,7 +133,11 @@ end
 % Question asked by: HCAI https://stackoverflow.com/users/1134241/hcai
 % Answer given by: Vidar https://stackoverflow.com/users/346645/vidar
 SpotNo = find(ismember(o.GeneNames, GenesToShow));
-Thresh = o.quality_threshold('Pixel') & ismember(o.pxSpotCodeNo, SpotNo);
+if isempty(UseSpots)
+    Thresh = o.quality_threshold('Pixel') & ismember(o.pxSpotCodeNo, SpotNo);
+else
+    Thresh = UseSpots & ismember(o.pxSpotCodeNo, SpotNo);
+end
 Spots = o.pxSpotGlobalYX(Thresh,:);
 
 Border = 0;
