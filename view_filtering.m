@@ -1,12 +1,18 @@
 function [] = view_filtering(o,r,t)
-%% 
-%Allows you to view filtering on tile t, round r, for all colour channels. 
-%You can also see how the radius of filter changes the results using the
-%scrollbar.
-%The tiles don't need to have been produced yet but
-%o must have the following parameters specified:
-%o.InputDirectory, o.FileBase, o.RawFileExtension,
-%o.ReferenceRound, o.AnchorChannel, o.DapiChannel, o.TileSz  
+%%  [] = view_filtering(o,r,t)
+%
+% Allows you to view filtering on tile t, round r, for all colour channels. 
+% You can also see how the radius of filter changes the results using the
+% scrollbar.
+%
+% o: iss object
+% r: round
+% t: tile
+%
+% The tiles don't need to have been produced yet but
+% o must have the following parameters specified:
+% o.InputDirectory, o.FileBase, o.RawFileExtension,
+% o.AnchorRound, o.AnchorChannel, o.DapiChannel, o.TileSz  
 
 %% Get paramaters needed for filtering
 %Global paramater as plot has multiple uicontrol, makes it easier to share data between them.
@@ -25,7 +31,7 @@ bfreader.close();
 vf_ISSPlotObject.r = r;
 vf_ISSPlotObject.t = t;
 vf_ISSPlotObject.nChannels = nChannels;
-vf_ISSPlotObject.ReferenceRound = o.ReferenceRound;
+vf_ISSPlotObject.AnchorRound = o.AnchorRound;
 vf_ISSPlotObject.AnchorChannel = o.AnchorChannel;
 vf_ISSPlotObject.DapiChannel = o.DapiChannel;
 vf_ISSPlotObject.TileSz = o.TileSz;
@@ -47,13 +53,13 @@ else
 end
 
 %% Default scaling - note 'auto' here is not the same as in extract_and_filter
-if r ~=o.ReferenceRound
+if r ~=o.AnchorRound
     if strcmpi(o.ExtractScale, 'auto')
         vf_ISSPlotObject.Scale = 2;
     else
         vf_ISSPlotObject.Scale = o.ExtractScale;
     end
-elseif r==o.ReferenceRound 
+elseif r==o.AnchorRound 
     if strcmpi(o.ExtractScaleAnchor, 'auto')
         vf_ISSPlotObject.Scale = 2;
     else
@@ -81,7 +87,7 @@ for c=1:nChannels
     end
     
     % focus stacking
-    I_mod = o.fstack_modified(I);
+    I_mod = o.fstack_modified(I(o.FirstZPlane:end));
     vf_ISSPlotObject.RawImages(:,:,c) = I_mod;
 end
 fprintf('\nFinished loading tile.\n');

@@ -1,11 +1,12 @@
 function [] = viewfilter_plot()
-%%
-%Once raw images for tile t and round r, loaded by view_filtering(o,r,t).
-%This plots the results. Initial images are raw data, then you can press
-%filter button to show filtered image. You can also change the radius of
-%the filter using the vertical scroll bar. Horizontal scroll bar allows you
-%to see image for each colour channel.
-%All data is saved in vf_ISSPlotObject which is global object
+%% [] = viewfilter_plot()
+%
+% Once raw images for tile t and round r, loaded by view_filtering(o,r,t).
+% This plots the results. Initial images are raw data, then you can press
+% filter button to show filtered image. You can also change the radius of
+% the filter using the vertical scroll bar. Horizontal scroll bar allows you
+% to see image for each colour channel.
+% All data is saved in vf_ISSPlotObject which is global object
 
 %% Set up figure for colour channel 1
 %Global paramater as plot has multiple uicontrol, makes it easier to share data between them.
@@ -43,7 +44,7 @@ jSlider = javax.swing.JSlider;
 [jhSlider, hContainer] = javacomponent(jSlider);
 
 %As filter for Dapi channel is different, need to change slider range.
-if vf_ISSPlotObject.c == vf_ISSPlotObject.DapiChannel && vf_ISSPlotObject.r == vf_ISSPlotObject.ReferenceRound
+if vf_ISSPlotObject.c == vf_ISSPlotObject.DapiChannel && vf_ISSPlotObject.r == vf_ISSPlotObject.AnchorRound
         set(jSlider, 'Value',vf_ISSPlotObject.DapiR, 'Orientation',jSlider.VERTICAL, 'MajorTickSpacing',5,'PaintTicks',true,...
     'PaintLabels',true,'maximum',95,'minimum',5,'SnapToTicks',true,'MinorTickSpacing',1);
 else
@@ -71,7 +72,7 @@ global vf_ISSPlotObject
 vf_ISSPlotObject.c = round(h.Value);
 
 %Filter radius has different range for Dapi channel
-if vf_ISSPlotObject.r == vf_ISSPlotObject.ReferenceRound
+if vf_ISSPlotObject.r == vf_ISSPlotObject.AnchorRound
     if vf_ISSPlotObject.c == vf_ISSPlotObject.DapiChannel
         set(vf_ISSPlotObject.jSlider,'maximum',95,'minimum',5,'Value',vf_ISSPlotObject.DapiR,...
             'MajorTickSpacing',5,'MinorTickSpacing',1,'LabelTable',vf_ISSPlotObject.jSlider.createStandardLabels(5));
@@ -99,7 +100,7 @@ global vf_ISSPlotObject
 
 %Only attempt filtering once stopped scrolling, else slow
 if ~h.getValueIsAdjusting
-    if vf_ISSPlotObject.r == vf_ISSPlotObject.ReferenceRound && vf_ISSPlotObject.c == vf_ISSPlotObject.DapiChannel
+    if vf_ISSPlotObject.r == vf_ISSPlotObject.AnchorRound && vf_ISSPlotObject.c == vf_ISSPlotObject.DapiChannel
         vf_ISSPlotObject.DapiR = round(h.getValue);
     else
         vf_ISSPlotObject.R1 = round(h.getValue);
@@ -118,7 +119,7 @@ global vf_ISSPlotObject
 if vf_ISSPlotObject.Filter == 0
     vf_ISSPlotObject.Image = vf_ISSPlotObject.RawImages(:,:,vf_ISSPlotObject.c);
 else
-    if vf_ISSPlotObject.r == vf_ISSPlotObject.ReferenceRound &&...
+    if vf_ISSPlotObject.r == vf_ISSPlotObject.AnchorRound &&...
             vf_ISSPlotObject.c == vf_ISSPlotObject.DapiChannel
         SE = get_filter(vf_ISSPlotObject.DapiR);
         vf_ISSPlotObject.FilterImages(:,:,vf_ISSPlotObject.c) = ...
@@ -137,9 +138,9 @@ vf_ISSPlotObject.Background = imagesc(vf_ISSPlotObject.Image); hold on; colormap
 caxis([0 max(vf_ISSPlotObject.Image(:))]);
 
 %Title
-if vf_ISSPlotObject.r == vf_ISSPlotObject.ReferenceRound && vf_ISSPlotObject.c==vf_ISSPlotObject.DapiChannel
+if vf_ISSPlotObject.r == vf_ISSPlotObject.AnchorRound && vf_ISSPlotObject.c==vf_ISSPlotObject.DapiChannel
     vf_ISSPlotObject.Title = title(['Tile ' num2str(vf_ISSPlotObject.t) ', Dapi Channel']);
-elseif vf_ISSPlotObject.r == vf_ISSPlotObject.ReferenceRound && vf_ISSPlotObject.c==vf_ISSPlotObject.AnchorChannel
+elseif vf_ISSPlotObject.r == vf_ISSPlotObject.AnchorRound && vf_ISSPlotObject.c==vf_ISSPlotObject.AnchorChannel
     vf_ISSPlotObject.Title = title(['Tile ' num2str(vf_ISSPlotObject.t) ', Anchor Channel']);
 else
     vf_ISSPlotObject.Title = title(['Tile ' num2str(vf_ISSPlotObject.t) ', Round '...

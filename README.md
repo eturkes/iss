@@ -5,11 +5,14 @@ The only file that you need to run to obtain and save the data is [bridge_proces
 
 ## Parameters that should be checked before each run
 There are a few parameters that need double checking or adjusting before each run:
-* [```o.AnchorChannel```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L5): This is the channel (starting from 1) in the anchor round (given by [```o.ReferenceRound```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L8)) which contains the spots. The final genes stem from these spots and it is also used for registration.
-* [```o.DapiChannel```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L6): This is the channel in the anchor round that contains the Dapi images.
-* [```o.InitialShiftChannel```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L7): This is the channel used to register all rounds to the anchor, so ensure it is one of the best colour channels. 
-* [```o.ReferenceRound```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L8): This is the index of the reference round. Should be the first round after imaging rounds.
-* [```o.RawFileExtension```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L9): This is the format of the raw data in [```o.InputDirectory```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L13).
+* [```o.AnchorRound```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L4): This is the index of the anchor round. Should be the first round after imaging rounds. The anchor round is the round that contains the Dapi image and anchor channel image, which contains spots arising from all genes.
+* [```o.AnchorChannel```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L5): This is the channel (starting from 1) in the anchor round (given by [```o.AnchorRound```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L4)) which contains the spots. The final genes (in probability and dot product methods) stem from these spots and it is also used for registration.
+* [```o.DapiChannel```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L6): This is the channel in the anchor round that contains the Dapi images.
+* [```o.InitialShiftChannel```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L7): This is the channel used to register all rounds to the anchor, so ensure it is one of the best colour channels. 
+* [```o.ReferenceRound```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L8): This is the index of the reference round. The reference round, is the round that the global coordinate system is built upon and all other rounds are registered to, it can be equal to or different to [```o.AnchorRound```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L4). If it is not equal to [```o.AnchorRound```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L4), then the anchor round is not used for anything.
+* [```o.ReferenceChannel```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L9): This is the channel (starting from 1) within the reference round (given by [```o.ReferenceRound```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L8)) which the global coordinate system is built upon. Ensure it is one of the best colour channels.
+* [```o.RawFileExtension```](https://github.com/jduffield65/iss/blob/b537681136244984efc1182d23f244a7e3dc9caf/bridge_process_template.m#L10): This is the format of the raw data in [```o.InputDirectory```](https://github.com/jduffield65/iss/blob/f739d4c2e38c66ff82e7fd7a9f02b0fe73125353/bridge_process_template.m#L13).
+* [```o.LogToFile```](https://github.com/jduffield65/iss/blob/5ba65f7c264798e66a91417be886707760062958/bridge_process_template.m#L11): Set this to 1 if you want the contents of the command window output to a .txt file. If you don't want the file, set to 0. By default, it is 1.
 
 ## File names
 There are a number of file/folder paths which need to be given:
@@ -38,6 +41,26 @@ You need to make sure that ```o.FileBase{```[```o.ReferenceRound```](https://git
 <p float="left">
 <img src="DebugImages/README/CodeBook.png" width = "250"> 
 </p>
+
+## Running with a subset of tiles
+Running the pipeline with the whole set of tiles can be quite time consuming so it is sometimes desirable to run the pipeline on a subset of tiles. You can do this via the [```o.EmptyTiles```](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/%40iss/iss.m#L455-L456) variable. For example, to only use tiles 1 and 2, you can add the [following lines](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/bridge_process_template.m#L62-L65) to [bridge_process_template.m](https://github.com/jduffield65/iss/blob/PixelBased/bridge_process_template.m):
+
+```matlab
+o.EmptyTiles(:) = 1;
+UseTiles = [1,2];
+o.EmptyTiles(UseTiles) = 0;
+```
+
+All tiles ```t```, such that ```o.EmptyTiles(t) = 1``` will be skipped. You can add this at any stage of the pipeline, after [```extract_and_filter```](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/bridge_process_template.m#L59). If you add it before the [registration step](https://github.com/jduffield65/iss/blob/9b863b1ff3589794334479cad0f31ce3db3698e3/bridge_process_template.m#L99), then if more than one tile is specified, they should each have at least one neighbour. An example showing three valid entries and one incorrect entry of ```o.EmptyTiles```, for a dataset consisting of 6 tiles is shown below.
+
+:heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark: | :x:
+:------------ | :-------------| :-------------| :-------------
+| ```1 1```       | ```0 1```     |   ```0 0```   |  ```0 1```      
+| ```0 0```       | ```0 1```     |   ```0 1```   |  ```1 0```      
+| ```1 1```       | ```1 1```     |   ```1 1```   |  ```1 1```     
+|Tiles 2 and 5 | Tiles 1 and 2 |  Tiles 1,2 and 4 | Tiles 1 and 5
+
+Running the full pipeline (post extract_and_filter) should take on the order of half an hour, if only one tile is selected.
 
 ## Stitching and registration parameters
 These are parameters that slightly affect how the stitching of tiles and registration between rounds and colour channels works. The default values in [bridge_process_template.m](https://github.com/jduffield65/iss/blob/master/bridge_process_template.m) should work most of the time but there are some cases when they may need altering.
@@ -99,14 +122,39 @@ Here, because round 7, channel 6  is particularly low intensity, when it is norm
 
 The probability method does not involve any such normalisation so is probably the better method to use. Also, with the recommended threshold values (first plot of each method), much more spots overcome the thresholding than the dot product method (38% more in this example).
 
+### Pixel based results
+To view the [results from the pixel based method](https://github.com/jduffield65/iss/blob/849350e6f0a4742d8fd6a3e083b0ffcd81914e31/%40iss/iss.m#L743-L771), run ```iss_change_plot(o,'Pixel')```. In this case, the spots are detected differentely, but the gene assignments are still carried out using the probability method. The thresholds to use are thus: ```o.pScoreThresh``` and ```o.pIntensityThresh```. The results saved have analagous names and meanings as with the probability method, except the prefix is ```px``` instead of ```p``` e.g. ```o.pxSpotScore```.
+
+Also, the pixel based method allows for the possibility of multiple genes assigned to the same pixel. To view these overlapping genes, you can set ```o.pScoreThresh2``` to a value below 0. It has a default value of 0 meaning only genes that are the best match at each pixel can be shown. If you set it to ```o.pScoreThresh2 = -0.001;```, then it allows for spots for which ```o.pxSpotScore = 0``` i.e. the second best match at that pixel.
+
 ### Viewing specific genes
-To see the distribution of a specific gene or specific set of genes, run ```iss_change_plot(o,CallSpotsMethod,GeneNames)``` with the plot open, where ```CallSpotsMethod``` is ```'Prob'``` or ```'DotProduct'``` as before. GeneNames is a cell array containing the names of the genes of interest, so to see Plp1 and somatostatin  with the probability method, run ```iss_change_plot(o,'Prob',[{'Plp1'},{'Sst'}])```. The result is shown below.
+To see the distribution of a specific gene or specific set of genes, run ```iss_change_plot(o,CallSpotsMethod,GeneNames)``` with the plot open, where ```CallSpotsMethod``` is ```'Prob'```, ```'DotProduct'``` or ```'Pixel'``` as before. GeneNames is a cell array containing the names of the genes of interest, so to see Plp1 and somatostatin  with the probability method, run ```iss_change_plot(o,'Prob',[{'Plp1'},{'Sst'}])```. The result is shown below.
 
 <p float="left">
 <img src="DebugImages/README/SstPlp1.png" width = "450"> 
 </p>
 
 The gene names given must exactly match those names in [```o.GeneNames```](https://github.com/jduffield65/iss/blob/2ec0f5fb924c28f76b06d5d9d00bc14f88d4b2ba/%40iss/iss.m#L541) which come from the codebook. To revert to showing all genes, run with ```GeneNames=o.GeneNames``` i.e. ```iss_change_plot(o,'Prob',o.GeneNames)```. To see all genes except for Plp1 and somatostatin, run with ```GeneNames=setdiff(o.GeneNames,[{'Plp1'},{'Sst'}])```
+
+### Viewing specific spots
+To see the distribution of a specific set of spots run ```iss_change_plot(o,CallSpotsMethod,GeneNames, SpotSet)``` with the plot open. ```SpotSet``` is logical array and only spots ```s``` for which ```SpotSet(s) = 1``` are shown. This allows you to choose your own thresholding methods, which may differ from the [default ones](https://github.com/jduffield65/iss/blob/PixelBased/@iss/quality_threshold.m). An example dataset for which ```SpotSet = o.pxSpotScore>30 & o.pxSpotIntensity > 500;``` is shown below:
+
+<p float="left">
+<img src="DebugImages/README/SpecificSpots1.png" width = "450"> 
+</p>
+
+#### Clustered spots
+You can also restrict the display to spots that are clustered, this acts as a guide to where the cell locations are. To do this, run ```SpotSetClustered = get_gene_clusters(o,CallSpotsMethod,r,k,SpotSet)``` followed by ```iss_change_plot(o,CallSpotsMethod,GeneNames, SpotSetClustered)```. A cluster is required to have ```k``` spots from ```SpotSet``` to be within a distance ```r``` pixels of each other. An example with ```CallSpotsMethod = Pixel```, ```r = 7```, ```k = 3``` and ```SpotSet = o.pxSpotScore>30 & o.pxSpotIntensity > 500;``` is shown below:
+
+<p float="left">
+<img src="DebugImages/README/SpecificSpots2.png" width = "450"> 
+</p>
+
+By default (running ```get_gene_clusters(o,'Pixel')```), ```r = 18```, ```k = 20``` and ```SpotSet = o.quality_threshold(CallSpotsMethod)```. This is shown below for the pixel based method:
+
+<p float="left">
+<img src="DebugImages/README/SpecificSpots3.png" width = "450"> 
+</p>
 
 ### Visualising individual spots
 To view the dot product assignment of a particular gene, with the plot open, run [```iss_view_codes(o,234321,Norm)```](https://github.com/jduffield65/iss/blob/eb6d7c23acf2b59a18903511b25b34ecd756c05b/bridge_process_template.m#L119). This will cause a crosshair to appear on the plot, then just click on the spot of interest as shown below.
@@ -132,7 +180,7 @@ To view the dot product assignment of a particular gene, with the plot open, run
 
 Also, if you know the index (```SpotNo```) of the spot you are interested in but don't want to find it in the plot, you can just run ```iss_view_codes(o,234321,Norm,SpotNo)```.
 
-The equivalent function for the probability method is [```iss_view_prob(o,234321,Norm)```](https://github.com/jduffield65/iss/blob/eb6d7c23acf2b59a18903511b25b34ecd756c05b/bridge_process_template.m#L123) which is called in exactly the same way. The plot is the same except the gene shown is that given by ```o.pSpotCodeNo``` not ```o.SpotCodeNo```. Also, there is an extra plot which shows you how the overall probability is made up from the individual probabilities of each round and channel, relative to the probability that the spot can be explained by the background alone (without any genes). This plot for the example spot is given below:
+The equivalent function for the probability method is [```iss_view_prob(o,234321,Norm,CallSpotsMethod)```](https://github.com/jduffield65/iss/blob/eb6d7c23acf2b59a18903511b25b34ecd756c05b/bridge_process_template.m#L123) which is called in exactly the same way, only can specify whether ```CallSpotsMethod``` is ```'Prob'``` or ```'Pixel'```. If this is not specified, it will default to the method used in the plot currently open. The figure is the same except the gene shown is that given by ```o.pSpotCodeNo``` or  ```o.pxSpotCodeNo``` not ```o.SpotCodeNo```. Also, there is an extra plot which shows you how the overall probability is made up from the individual probabilities of each round and channel, relative to the probability that the spot can be explained by the background alone (without any genes). This plot for the example spot is given below:
 
 <p float="left">
 <img src="DebugImages/README/view_prob.png" width = "550"> 
@@ -190,3 +238,32 @@ Thus, from this right hand plot, to get the absolute probability of the clicked 
 
 This example also exhibts a potential pitfall of the method in dealing with bleedthrough. ```[round 2, colour channel 3]``` is not in
 <img src="https://tex.s2cms.ru/svg/S_g" alt="S_g" /> for Nrn1 so we assume <img src="https://tex.s2cms.ru/svg/%5Clambda" alt="\lambda" /> is most likely to be 0, this means for a spot to match to Nrn1, we would expect that spot to have intensity of zero in ```[round 2, colour channel 3]```. But looking at the predicted code for Nrn1, the gene intensity in ```[round 2, colour channel 3]``` is 1891, so why would be possibly expect the spot to have zero intensity? This seems to throw away information, we have learned about the bleedthrough between colour channel 2 and 3. The Bleedthrough does have some effect though. Because of the <img src="https://tex.s2cms.ru/svg/1%2Fg" alt="1/g" /> factor, the <img src="https://tex.s2cms.ru/svg/%5Cfrac%7B1%7D%7Bg%7DP%5Cleft(%5Cfrac%7Bx%7D%7Bg%7D%5Cright)" alt="\frac{1}{g}P\left(\frac{x}{g}\right)" /> curve is flattened out. This reduces the peak probability and the magnitude of the gradient (to get from the peak log probability to the peak probability - 1 for ```[round 2, colour channel 3]``` would require a change in spot intensity of around 700 whereas in ```[round 7, colour channel 2]``` where there is no bleedthrough, this would require a change of 8). From this we see that the probability of rounds/channels with high bleedthrough are insensitive to spot intensity but have a low probability (although with bleedthrough, the background distribution tends to have a wider peak which helps nullify the reduction in peak probability - the wider the background distribution peak, the more overlap with the wide <img src="https://tex.s2cms.ru/svg/%5Cfrac%7B1%7D%7Bg%7DP%5Cleft(%5Cfrac%7Bx%7D%7Bg%7D%5Cright)" alt="\frac{1}{g}P\left(\frac{x}{g}\right)" /> caused by bleedthrough, thus the higher the max probability). To counteract this, we could add these rounds/channels with high bleedthrough to <img src="https://tex.s2cms.ru/svg/S_g" alt="S_g" />, but this would make the size of <img src="https://tex.s2cms.ru/svg/S_g" alt="S_g" /> vary between genes which may introduce a subtelty when comparing the probabilities of assigning to genes, i.e. an artificial spot with high postive intensity in all rounds/channels would preferentially match with genes for which the size of <img src="https://tex.s2cms.ru/svg/S_g" alt="S_g" /> is larger.
+
+### Visualising filtering step
+The tiles are filtered in the [```extract_and_filter``` step](https://github.com/jduffield65/iss/blob/34786306a0ee42fcea10188b7c5c688362eb20b6/%40iss/extract_and_filter.m#L230-L239). The goal of this step is to emphasize the spots over the background. To see if it has worked as intended or if the filtering parameters are correct, you can run [```view_filtering(o,r,t)```](https://github.com/jduffield65/iss/blob/PixelBased/view_filtering.m); r is the round of interest and t is the tile of interest. You can run this before the tiles have been produced, the only requirement is that the ```o``` object must have the following properties specified:
+* ```o.InputDirectory```
+* ```o.FileBase```
+* ```o.RawFileExtension```
+* ```o.AnchorRound```
+* ```o.AnchorChannel```
+* ```o.DapiChannel```
+* ```o.TileSz```
+
+The first image that will appear is the raw image for the first colour channel. You can use the horizontal scroll bar to change colour channel, e.g. an example anchor image is shown below on the left. You can then press the Filter button to see the filtered image (i.e. what the files in ```o.TileDirectory``` will end up looking like).
+
+<p float="left">
+<img src="DebugImages/README/UnFiltered.png" width = "400"> 
+<img src="DebugImages/README/Filtered.png" width = "400"> 
+</p>
+
+With the filter button pressed, you can change the radius of the filter used with the vertical slider and the plot should update automatically. The default value is the value of ```o.ExtractR1``` that would be used in the pipeline automatically. If you decide that another value is more suitable, you can just run in the command window: ```o.ExtractR1 = NewValue;```. The plots below show the same region that is unfiltered, filtered with filter radius of 3 (default) and 8 respectively.
+
+<p float="left">
+<img src="DebugImages/README/UnFilteredClose.png" width = "400"> 
+<img src="DebugImages/README/FilteredCloseR3.png" width = "400"> 
+<img src="DebugImages/README/FilteredCloseR8.png" width = "400"> 
+</p>
+
+
+If you are viewing the Dapi colour channel in the Anchor round, then the vertical slider controls ```o.DapiR``` instead and the [filtering is different](https://github.com/jduffield65/iss/blob/34786306a0ee42fcea10188b7c5c688362eb20b6/%40iss/extract_and_filter.m#L233-L234). 
+

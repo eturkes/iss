@@ -1,12 +1,20 @@
+%% Template of a pipeline that links together all the different processes 
+%in the correct order.
+%The first two sections below will be different for each experiment so
+%should be checked before each run.
+
 %% Parameters that should be checked before each run
 %CHECK BEFORE EACH RUN
-
-o = iss;
-o.AnchorChannel =  ;            %Channel that has most spots in anchor round (o.ReferenceRound)
-o.DapiChannel = 1;              %Channel in anchor round that contains Dapi images
+o = iss_PixelBased;
+o.AnchorRound = 8;              %Round that contains Dapi image
+o.AnchorChannel =  ;            %Channel that has most spots in o.AnchorRound
+o.DapiChannel = 1;              %Channel in o.AnchorRound that contains Dapi images
 o.InitialShiftChannel = 4;      %Channel to use to find initial shifts between rounds
-o.ReferenceRound = 8;           %Index of anchor round
+o.ReferenceRound = 4;           %Global coordinate system is built upon o.ReferenceRound and
+o.ReferenceChannel = 4;         %o.ReferenceChannel. If RefRound = AnchorRound, this has to be AnchorChannel.
 o.RawFileExtension = '.nd2';    %Format of raw data
+o.LogToFile = 1;                %Set to 1 if you want to save command window to txt file, else set to 0.
+o.StripHack = true;             %Hack to deal with strips of all zeros in raw data. Recommend on.
 
 %% File Names
 %CHECK BEFORE EACH RUN
@@ -28,6 +36,13 @@ o.OutputDirectory = '...\Experiment1\output';
 %Codebook is a text file containing 2 columns - 1st is the gene name. 2nd is
 %the code, length o.nRounds and containing numbers in the range from 0 to o.nBP-1.
 o.CodeFile = '\\zserver\Data\ISS\codebook_73gene_6channels_2col.txt';
+
+%% Logging
+if o.LogToFile
+    if isempty(o.LogFile)
+        o.LogFile = fullfile(o.OutputDirectory,'Log.txt');
+    end
+end
 
 %% extract and filter
 
@@ -58,7 +73,7 @@ end
 save(fullfile(o.OutputDirectory, 'oExtract'), 'o', '-v7.3');
 
 %% register
-o.AutoThresh(:,o.AnchorChannel,o.ReferenceRound) = o.AutoThresh(:,o.AnchorChannel,o.ReferenceRound)*0.25;     %As Anchor Threshold seemed too high
+%o.AutoThresh(:,o.AnchorChannel,o.AnchorRound) = o.AutoThresh(:,o.AnchorChannel,o.AnchorRound)*0.25;     %As Anchor Threshold seemed too high
 %parameters
 o.TileSz = 2048;
 
@@ -72,30 +87,28 @@ o.DetectionThresh = 'auto';
 o.ThreshParam = 5;
 o.MinThresh = 10;
 o.minPeaks = 1;
-o.InitalShiftAutoMinScoreParam=3;   %a lower value will make it quicker but more likely to fail
+o.InitalShiftAutoMinScoreParam=2;   %a lower value will make it quicker but more likely to fail
 
 %paramaters to find shifts between overlapping tiles
 o.RegMinScore = 'auto';     
 o.RegStep = [5,5];
 o.RegSearch.South.Y = -1900:o.RegStep(1):-1700;
-o.RegSearch.South.X = -50:o.RegStep(2):50;
-o.RegSearch.East.Y = -50:o.RegStep(1):50;
+o.RegSearch.South.X = -150:o.RegStep(2):150;
+o.RegSearch.East.Y = -150:o.RegStep(1):150;
 o.RegSearch.East.X = -1900:o.RegStep(2):-1700;
 o.RegWidenSearch = [50,50]; 
+
+%If a channel or round is faulty, you can ignore it by selecting only the
+%good ones in o.UseChannels and o.UseRounds.
+o.nBP = 7;
+o.UseChannels = 1:o.nBP;
+o.UseRounds = 1:o.nRounds;
 
 %run code
 o = o.register2;
 save(fullfile(o.OutputDirectory, 'oRegister'), 'o', '-v7.3');
 
 %% find spots
-
-%parameters
-o.nBP = 7;
-
-%If a channel or round is faulty, you can ignore it by selecting only the
-%good ones in o.UseChannels and o.UseRounds.
-o.UseChannels = 1:o.nBP;
-o.UseRounds = 1:o.nRounds;
 
 %Search paramaters
 o.FindSpotsMinScore = 'auto';
@@ -108,8 +121,9 @@ o.FindSpotsSearch.X = -100:o.FindSpotsStep(2):100;
 %Make WidenSearch larger if you think you have a large shift between rounds
 o.FindSpotsWidenSearch = [50,50]; 
 
-o.PcDist = 3; 
-o.MinPCMatches = 1;    %HACK SO IT GETS TO THE END
+o.PcDist = 3;
+o.PointCloudMethod = 1;     %1 or 2, set to 2 if no anchor round. 
+%2 assumes same scaling to each color channel across all rounds.
 
 %run code
 o = o.find_spots2;
@@ -119,14 +133,18 @@ save(fullfile(o.OutputDirectory, 'oFind_spots'), 'o', '-v7.3');
 %run code
 o.CallSpotsCodeNorm = 'WholeCode';      %Other alternative is 'Round'
 o = o.call_spots;
-o = o.call_spots_prob;
+[o,LookupTable] = o.call_spots_prob;
 save(fullfile(o.OutputDirectory, 'oCall_spots'), 'o', '-v7.3');
 
+%Pixel based
+o = o.call_spots_pixel(LookupTable);
+save(fullfile(o.OutputDirectory, 'oCall_spots_pixel'), 'o', '-v7.3');
 %% plot results
 
-o.CombiQualThresh = 0.7;
-BigDapiImage = imread(o.BigDapiFile);
-o.plot(BigDapiImage);
+o.dpCombiQualThresh = 0.7;
+Roi = round([1, max(o.dpSpotGlobalYX(:,2)), ...
+1, max(o.dpSpotGlobalYX(:,1))]);
+o.plot(o.BigAnchorFile,Roi,'Prob');
 
 %iss_view_codes(o,234321,1);
 %o.pIntensityThresh = 100;
