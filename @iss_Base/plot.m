@@ -44,7 +44,7 @@ if Roi(1) ~= 1 || Roi(3) ~= 1
     Roi(3) = 1;
 end
 
-if (nargin<2 || isempty(BackgroundImageFile)) && ~isempty(o.BigDapiFile)
+if (nargin<2 || isempty(BackgroundImageFile))
     if exist(o.BigDapiFile, 'file')
         fprintf('loading background image...');
         BackgroundImageFile = o.BigDapiFile;
@@ -93,6 +93,13 @@ S.Background = imagesc(S.Image); hold on; colormap bone;
 %set(S.Background, 'YData', [Roi(1), Roi(2)]);
 xlim([Roi(1) Roi(2)]);
 ylim([Roi(3) Roi(4)]);
+if min(S.Image(:))==0 && max(S.Image(:))==0
+    %If no background, set to black
+    caxis([10,12]);
+elseif abs(int32(median(S.Image(:)))-o.TilePixelValueShift)<o.TilePixelValueShift/100
+    %If anchor image, want black
+    caxis([o.TilePixelValueShift,o.TilePixelValueShift+o.TilePixelValueShift/5]);
+end
 
 %title(['Z Plane ' num2str(S.MinZ)],'Color','w');
 
@@ -117,7 +124,7 @@ S.h = zeros(size(S.uGenes));
 for i=1:length(S.uGenes)
     MySpots = PlotSpots(S.GeneNo==i);
     if any(MySpots)
-        S.h(i) = plot(S.SpotYX(MySpots,2), S.SpotYX(MySpots,1), '.');
+        S.h(i) = plot(S.SpotYX(MySpots,2), S.SpotYX(MySpots,1), '.', 'MarkerSize', 1,'Color',hsv2rgb([0 0 0.5]));
     end
 end 
 %hold off

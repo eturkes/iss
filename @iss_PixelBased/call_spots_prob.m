@@ -136,7 +136,12 @@ NumericalCode = zeros(nCodes, o.nRounds);
 for r=1:o.nRounds
     if r<=o.nRounds-o.nRedundantRounds
         for c=1:nCodes
-            [~, NumericalCode(c,r)] = ismember(CharCode{c}(r), o.bpLabels);
+            try
+                [~, NumericalCode(c,r)] = ismember(CharCode{c}(r), o.bpLabels);
+            catch
+                warning('Code %s has no channel for round %.0f',GeneName{c},r);
+                NumericalCode(c,r)=0;
+            end
         end
     else
         % redundant round - compute codes automatically
@@ -174,29 +179,28 @@ o.pBledCodes = BledCodes;
 %Comes from P(f) = P_lambda(lambda)P_hist(f-lambda*g) as f = lambda*g+background
 
 %Load histogram data - background prob distribution
-%Need to make hist data symmetric and include all data - 0 in middle
-%This assumes -NewValMax < min(o.HistValues).
 ModHistCounts = o.SmoothHistCounts;     %Smooth extreme values of HistCounts
-[NonZeroValIdx,~,~] = ind2sub(size(ModHistCounts),find(ModHistCounts>0.1));
-NewValMax = max(max(o.pSpotColors(:)),o.HistValues(max((NonZeroValIdx))));
-o.SymmHistValues = -NewValMax:NewValMax;
-nBins = length(o.SymmHistValues);
-SymmHistCounts = zeros(nBins,o.nBP,o.nRounds);
-LastIdx = find(o.HistValues==o.SymmHistValues(end));
-if o.SymmHistValues(1)<o.HistValues(1)
-    FirstIdx = find(o.SymmHistValues==o.HistValues(1));
-    SymmHistCounts(FirstIdx:end,:,:) = ModHistCounts(1:LastIdx,:,:);
-else
-    FirstIdx = find(o.HistValues==o.SymmHistValues(1));
-    SymmHistCounts(:,:,:) = ModHistCounts(FirstIdx:LastIdx,:,:);
-end
-HistProbs = SymmHistCounts./sum(SymmHistCounts);
+nBins = length(o.HistValues);
+HistProbs = ModHistCounts./sum(ModHistCounts);
 o.HistProbs = (HistProbs+o.alpha)./(1+nBins*o.alpha);
+o.HistZeroIndex = find(o.HistValues==0);
 
 %Get Lambda probability distribution for all genes
-x = min(o.pSpotColors(:))-1:max(o.pSpotColors(:))-1;    %subsitiution x=lambda*g, -1 due to matlab indexing
+%Find length of array by ensuring that gamma distribution for max predicted gene code
+%drops to 0 within it.
+x_All = 1:10^6;
+gMax = max(o.pBledCodes(:));
+MaxProbDist = gampdf(x_All,o.GammaShape,gMax/(o.GammaShape-1));
+Max_x = min(find(x_All>gMax & MaxProbDist<1e-7));
+if o.ProbMethod == 2
+    x = min(o.pSpotColors(:))-1:Max_x;    %subsitiution x=lambda*g, -1 due to matlab indexing
+else
+    x = 0:Max_x;
+end
 o.ZeroIndex = find(x==0);     %need when looking up conv values
-LambdaDistAll = zeros(length(x),nCodes,o.nBP,o.nRounds);
+xSz = length(x);
+LambdaDistAll = zeros(xSz,nCodes,o.nBP,o.nRounds);
+
 
 fprintf('\nGetting probability distributions for gene   ');
 for GeneNo = 1:nCodes
@@ -211,8 +215,8 @@ for GeneNo = 1:nCodes
     for b=1:o.nBP
         for r=1:o.nRounds
             g = BledCode(b,r);
-            if g<0
-                error('Predicted bled code is less than 0');
+            if g<1
+                g=1;
             end
             if o.ProbMethod == 1
                 %GammaScale is g/(o.GammaShape-1) so distribution peaks at g.
@@ -231,27 +235,12 @@ for GeneNo = 1:nCodes
             %Normalise as for small g might not be normalised due to
             %discrete distribution.
             LambdaDistAll(:,GeneNo,b,r) = LambdaDist/sum(LambdaDist);
+            %Ensure no zero values as log(0)=-inf.
+            LambdaDistAll(:,GeneNo,b,r) = (LambdaDistAll(:,GeneNo,b,r)+o.alpha)./(1+xSz*o.alpha);
         end
     end
 end
 o.LambdaDist = LambdaDistAll;
-
-%Store convolution results as look up table
-if nargin<2 || isempty(LookupTableInput)    
-    LookupTable = nan(length(x),nCodes,o.nBP,o.nRounds);
-    fprintf('\nDoing convolutions for Channel  ');
-    for b=1:o.nBP
-        fprintf('\b%d',b);
-        if ismember(b,o.UseChannels)
-            for r=1:o.nRounds
-                LookupTable(:,:,b,r)=log(conv2(LambdaDistAll(:,:,b,r),o.HistProbs(:,b,r),'same'));
-            end
-        end
-    end
-else
-    LookupTable = LookupTableInput;
-end
-fprintf('\n');
 
 if o.ProbMethod == 1
     %Get background Prob using gamma with g=1 i.e. very small prediction of
@@ -264,13 +253,38 @@ elseif o.ProbMethod == 2
     BackgroundGamma = dirac(x);
     BackgroundGamma(BackgroundGamma==inf)=1;
 end
+%Ensure no zero values as log(0)=-inf.
+BackgroundGamma = (BackgroundGamma+o.alpha)./(1+xSz*o.alpha);
 o.BackgroundLambdaDist = BackgroundGamma;
-o.BackgroundProb = zeros(length(x),o.nBP,o.nRounds);
+o.BackgroundProb = zeros(xSz+length(o.HistCounts)-1,o.nBP,o.nRounds);
 for b=1:o.nBP
     for r=1:o.nRounds
-        o.BackgroundProb(:,b,r) = conv(BackgroundGamma,o.HistProbs(:,b,r),'same');
+        o.BackgroundProb(:,b,r) = conv(BackgroundGamma,o.HistProbs(:,b,r));
     end
 end
+
+%Store convolution results as look up table
+BledCodes = reshape(o.BledCodes,[nCodes,o.nBP,o.nRounds]);
+if nargin<2 || isempty(LookupTableInput)    
+    LookupTable = nan(xSz+length(o.HistCounts)-1,nCodes,o.nBP,o.nRounds);
+    fprintf('\nDoing convolutions for Channel  ');
+    for b=1:o.nBP
+        fprintf('\b%d',b);
+        if ismember(b,o.UseChannels)
+            for r=1:o.nRounds
+                NonZeroGenes = BledCodes(:,b,r)>0;
+                LookupTable(:,NonZeroGenes,b,r)=log(conv2(LambdaDistAll(:,NonZeroGenes,b,r),o.HistProbs(:,b,r)));
+                %If bled code is 0, just set to background distribution.
+                LookupTable(:,~NonZeroGenes,b,r)=log(repmat(o.BackgroundProb(:,b,r),[1,sum(~NonZeroGenes)]));
+            end
+        end
+    end
+else
+    LookupTable = LookupTableInput;
+end
+fprintf('\n');
+%Only keep LookupTable values within spot range.
+LookupTable = LookupTable(1:o.HistZeroIndex+o.ZeroIndex-1+max(o.HistValues),:,:,:);
 
 %Get log probs for each spot 
 LogProbOverBackground = o.get_LogProbOverBackground(o.pSpotColors,LookupTable);

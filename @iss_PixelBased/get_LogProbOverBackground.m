@@ -12,6 +12,11 @@ function [LogProbOverBackground,LogProbOverBackgroundMatrix] = get_LogProbOverBa
 % channel/round indicated by i for gene g. This does not take account of
 % ScoreScale. 
 %Variables needed for summing LogProbabilities from lookup table
+if isempty(o.HistZeroIndex)
+    error('foo:bar',['5/3/2021 update changed the way LookupTable calculated for Prob and PixelBased methods.\n',...
+        'Delete LookupTable%.0f.mat in:\n%s\n'...
+        'Rerun [o,LookupTable]=o.call_spots_prob;'],o.ProbMethod,o.OutputDirectory);
+end
 nCodes = length(o.CharCodes);
 nChans = size(o.UseChannels,2);
 nRounds = size(o.UseRounds,2);
@@ -22,17 +27,31 @@ RoundIndex = repmat(gRoundIndex,1,nCodes);
 GeneIndex = int32(repelem(1:nCodes,1,nRounds*nChans));
 
 nSpots = size(SpotColors,1);
-Verbose = nSpots>1;
+Verbose = nSpots>1000;
 SpotColors = int32(SpotColors); %For indexing everything needs to be int32
 LogProbOverBackground = zeros(nSpots,nCodes);
 
 LogProbMultiplier = zeros(nRounds*nChans,nCodes);
-if nChans == o.nBP && nRounds == o.nRounds
+if nChans == o.nBP
     for g=1:nCodes
-        LogProbMultiplier(:,g) = o.UnbledCodes(g,:);
+        if o.ScoreBleedThroughContribution
+            %Normalised bleed matrix gives relative contribution of each
+            %channel in each round. Sum of NormBledCode is 1 in each round.
+            %I.e. this takes account of bleed through.
+            BledCode = reshape(o.BledCodes(g,:),[o.nBP,o.nRounds]);
+            NormBledCode = BledCode./sum(BledCode,1);
+            LogProbMultiplier(:,g) = NormBledCode(:);
+            if o.ScoreScale~=0
+                warning(['Using o.ScoreScale=0 to find LogProbOverBackground as',...
+                    'o.ScoreBleedThroughContribution=True']);
+            end
+            o.ScoreScale=0;
+        else
+            LogProbMultiplier(:,g) = o.UnbledCodes(g,:);
+        end
     end
     %How many squares that contribute:
-    NormFactor = double(o.nBP*o.nRounds)/double(o.nRounds+o.ScoreScale*(o.nBP*o.nRounds-o.nRounds));
+    NormFactor = double(o.nBP*nRounds)/double(nRounds+o.ScoreScale*(o.nBP*nRounds-nRounds));
     %Normalise by this to allow valid comparison
     LogProbMultiplier(LogProbMultiplier==0) = o.ScoreScale;
     LogProbMultiplier = LogProbMultiplier*NormFactor;
@@ -49,12 +68,12 @@ if Verbose
 end
 for s=1:nSpots
     sSpotColor = SpotColors(s,sub2ind([o.nBP,o.nRounds],gChannelIndex,gRoundIndex));
-    SpotIndex = repmat(o.ZeroIndex-1+sSpotColor,1,nCodes); %-1 due to matlab indexing I think
+    SpotIndex = repmat(o.HistZeroIndex+o.ZeroIndex-1+sSpotColor,1,nCodes); %-1 due to matlab indexing I think
     %Indices = sub2ind(size(LookupTable),SpotIndex,GeneIndex,ChannelIndex,RoundIndex);
     Indices = SpotIndex + (GeneIndex-1)*size(LookupTable,1) +...
          (ChannelIndex-1)*size(LookupTable,1)*size(LookupTable,2)+...
          (RoundIndex-1)*size(LookupTable,1)*size(LookupTable,2)*size(LookupTable,3);
-    BackgroundSpotIndex = o.ZeroIndex-1+sSpotColor;
+    BackgroundSpotIndex = o.HistZeroIndex+o.ZeroIndex-1+sSpotColor;
     BackgroundIndices = BackgroundSpotIndex+...
         (gChannelIndex-1)*size(o.BackgroundProb,1)+...
         (gRoundIndex-1)*size(o.BackgroundProb,1)*size(o.BackgroundProb,2);

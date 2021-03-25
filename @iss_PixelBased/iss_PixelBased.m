@@ -28,14 +28,13 @@ classdef iss_PixelBased < iss_Base
         %The HistCount is smoothed according to
         %SmoothHistCountLimit*exp(SmoothHistCountParam*x);
         %SmoothHistCountParamGuess is the start point to find SmoothHistCountParam.
-        SmoothHistCountParamGuess = -0.003;
+        SmoothHistCountParamGuess = -0.003;        
         
-        %SymmHistValues is -max(HistValues(HistCount>0)):max(HistValues(HistCount>0)).
-        %Required as needs to be symmetric for the convolution
-        SymmHistValues;
+        %HistZeroIndex is index where HistValues==0
+        HistZeroIndex;
         
         %HistProbs(:,b,r) is the probability corresponding to each value
-        %in SymmHistValues for channel b, round r.
+        %in HistValues for channel b, round r.
         %(HistCounts/nPixels+o.alpha)./(1+nBins*o.alpha);
         HistProbs;
         
@@ -94,6 +93,14 @@ classdef iss_PixelBased < iss_Base
         %If ProbMethod=2, this is 1. 
         ScoreScale = 0;
         
+        %If ScoreBledThroughContribution is true, then ScoreScale will be
+        %set to 0 and e.g. if for round r, gene g, o.BledCodes = 
+        %[0.001,    0.05,   0.4,    0.09,   0.001,  0,  0].
+        %The contribution of each channel to LogProb for this round will be:
+        %[0.0018,   0.092,  0.738,  0.166,  0.0018, 0,  0].
+        %I.e. bleed through contributes but in proportion to its intensity.
+        ScoreBleedThroughContribution = true;
+        
         %pIntensityThresh is the value pSpotIntensity(s) needs to exceed for spot s
         %to count
         pIntensityThresh = 100;
@@ -120,12 +127,12 @@ classdef iss_PixelBased < iss_Base
         pDevThresh = 6;
         
         %Values used in quality_threshold for prob method
-        pQualThresh1 = -220; %Optimized using PyTorch
-        pQualParam1 = 1.5;    %Optimized using PyTorch
-        pQualThresh2 = 15.634; %Optimized using PyTorch
-        pQualParam2 = 0;    %Optimized using PyTorch
-        pQualThresh3 = 0;
-        pQualThresh4 = 0;
+        pQualThresh1 = -90;     %Optimized using ground truth
+        pQualParam1 = 0.4;      %Optimized using ground truth
+        pQualThresh2 = -5;     %Optimized using ground truth
+        pQualParam2 = 3.1;      %Optimized using ground truth
+        pQualThresh3 = 71;
+        pQualThresh4 = -20;
         
         %% variables: spot calling outputs - prob method
         % pSpotGlobalYX(Spot,1:2) contains y,x coordinates of every spot in
@@ -189,6 +196,17 @@ classdef iss_PixelBased < iss_Base
         pxInitialScoreThresh = 0;   %I.e. only want spots that are at least 2nd best at their position
         pxInitialProbThresh = -5;
         
+        %When finding probability for second best gene, remove best gene
+        %first in all rounds/channels where gene should be present or
+        %bleedthrough is more than pLogProb2RemoveGeneThresh.
+        pLogProb2RemoveGeneThresh = 0.25;
+        
+        %When finding probability for second best gene, remove
+        %(1-DistScore) fraction of pxSpotBestGene(s) code from
+        %pxSpotColor(s,:) where DistScore = exp(-Dist.^2/pLogProb2DistParam^2);
+        %Dist being the distance to the nearest pxSpotBestGene(s) spot.
+        pLogProb2DistParam = 25;
+        
         %% PixelBased method outputs
         
         % pxSpotGlobalYX(Spot,1:2) contains y,x coordinates of every spot in
@@ -209,7 +227,7 @@ classdef iss_PixelBased < iss_Base
         %probability it can be explained by background alone.
         pxLogProbOverBackground;        
         
-        %pxSpotScore is pLogProb -max(pLogProb(SpotCodeNo~=pSpotCodeNo))
+        %pxSpotScore is pLogProb -max(pxLogProb(SpotCodeNo~=pSpotCodeNo))
         pxSpotScore;
         
         %pxSpotScoreDev(s) is the standard deviation of the log prob of spot s
@@ -222,6 +240,15 @@ classdef iss_PixelBased < iss_Base
         %pxLocalTile(s) is the tile spot s was found on
         pxLocalTile;
         
+        %pxBestGene(s) is gene number of best gene at location of spot s.
+        pxSpotBestGene;
+        
+        %pxLogProbOverBackground2(s) is LogProbOverBackground for spot s
+        %after pxBestGene(s) has been removed.
+        pxLogProbOverBackground2;
+        
+        %pxSpotScore2(s) is pxLogProb2 -max(pxLogProb2(SpotCodeNo~=pSpotCodeNo))
+        pxSpotScore2;
         
     end
 end

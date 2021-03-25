@@ -24,6 +24,8 @@ elseif strcmpi('Pixel',Method)
     %o.pIntensityThresh2 = 50;
 end
 QualOK = quality_threshold(o,Method);
+%QualOK = o.pxNotDuplicate  & (o.pxSpotScore>=0|o.pxLogProbOverBackground>-5);
+%QualOK = o.pxNotDuplicate & QualOK;
 fprintf('Total Primary Spots: \t\t\t\t%d\n',sum(QualOK&PrimarySet));
 fprintf('Total Primary or Secondary Spots: \t\t%d\n',sum(QualOK&(PrimarySet|SecondarySet)));
 fprintf('Total Spots: \t\t\t\t\t%d\n',sum(QualOK));
@@ -105,9 +107,9 @@ end
 
 i = size(TruePosData.Summary,1)+1;      %INDEX OF DATA TO BE ADDED
 TruePosData.Summary(i,'FileLocation') = ...
-    {fullfile(o.OutputDirectory, 'oCall_spots_pixel_GammaShape=3_5')};
-%Method = 'Pixel: pLogThresh, ProbMethod = 1 but Rayleigh not Gamma, 6 of 7 UnBledCodes';
-Method = 'Pixel: pQualThresh, ProbMethod = 1, GammaShape=3.5, pQualThresh3=45, pQualThresh4=-175';
+    {fullfile(o.OutputDirectory, 'oCall_spots_pixel_NoBleedThroughMedianEig')};
+%Method = 'Pixel: pLogThresh, ProbMethod = 1, GammaShape=3, NoFilter, Smooth, pQualThresh3=100, pQualThresh=-25';
+Method = 'Pixel: pQualThresh, ProbMethod = 1, pQualThresh3=71, AllBleedThroughInBleedMatrix, Median Eigenvalues, Used get_secondary_gene_prob with remove_full_code';
 %Method = 'OMP: BledCodes';
 %Method = 'OMP: UnBledCodes';
 %Method = 'Spatial';
@@ -138,6 +140,7 @@ elseif contains(Method,'Pixel: pQualThresh')
     if o.ProbMethod==1
         TruePosData.Summary(i,'ScoreScale') = {o.ScoreScale};
     end
+    TruePosData.Summary(i,'pIntensityThresh') = {o.pIntensityThresh};
     TruePosData.Summary(i,'pQualThresh1') = {o.pQualThresh1};
     TruePosData.Summary(i,'pQualParam1') = {o.pQualParam1};
     TruePosData.Summary(i,'pQualThresh2') = {o.pQualThresh2};
@@ -198,14 +201,20 @@ TruePosData.Summary(i,'Combined_nFP') = {Combined_nFP};
 %save(fullfile(o.OutputDirectory, 'GroundTruth_Data'), 'TruePosData', '-v7.3');
 %% Find Best Params - PixelBased
 %QualThresh method
-% % QualThresh1 = -300:50:100;
-% % QualParam1 =  -0.5:0.5:8;
-% % QualThresh2 = -150:50:100;
-% % QualParam2 = 0;   %Doesn't affect it at all
-% QualThresh1 = -280:10:-220;
-% QualParam1 =  1.2:0.1:1.8;
-% QualThresh2 = -130:10:-70;
-% QualParam2 = 0;
+% % QualThresh2 = o.pQualThresh2;
+% % QualParam2 = o.pQualParam2;
+% % % QualThresh1 = -250:50:150;
+% % % QualParam1 =  0:0.5:3;
+% % QualThresh1 = -130:5:-80;
+% % QualParam1 =  0.2:0.05:0.8;
+
+% QualThresh1 = o.pQualThresh1;
+% QualParam1 = o.pQualParam1;
+% % QualThresh2 = -250:50:150;
+% % QualParam2 = 0:0.5:6;
+% QualThresh2 = 30:5:80;
+% QualParam2 = 2.7:0.05:3.3;
+% % %QualParam2 = 0;   %Doesn't affect it at all
 % ScoreImage = zeros(length(QualThresh1),length(QualParam1),length(QualThresh2),length(QualParam2));
 % for i=1:length(QualThresh1)
 %     o.pQualThresh1 = QualThresh1(i);
@@ -243,36 +252,37 @@ TruePosData.Summary(i,'Combined_nFP') = {Combined_nFP};
 % QualThresh2(c)
 % QualParam2(d)
 
-% % QualThresh3 = 0:25:300;
-% % QualThresh4 = -300:25:0;
-% QualThresh3 = 30:5:70;
-% QualThresh4 = -195:5:-155;
-% ScoreImage = zeros(length(QualThresh3),length(QualThresh4));
-% for i=1:length(QualThresh3)
-%     o.pQualThresh3 = QualThresh3(i);
-%     for j=1:length(QualThresh4)
-%         o.pQualThresh4 = QualThresh4(j);
-%         QualOK = quality_threshold(o,'Pixel');
-%         for r=o.gtRounds
-%             for b=o.UseChannels
-%                 if o.gtGeneNo(r,b)==0; continue; end
-%                 pfTruePosSet = o.([pf,'_gtIdentity']){r,b}==1;
-%                 pfFalsePosSet = o.([pf,'_gtIdentity']){r,b}==2;
-%                 %ScoreImage(i,j,k,k2) = ScoreImage(i,j,k,k2)+sum(QualOK&pfTruePosSet)/sum(pfTruePosSet)+...
-%                 %     5*sum(~QualOK&pfFalsePosSet)/sum(pfFalsePosSet);
-%                 ScoreImage(i,j) = ScoreImage(i,j)+sum(~QualOK&pfTruePosSet)+...
-%                     sum(o.gtTruePositiveSet{r,b})-sum(pfTruePosSet)+2*sum(QualOK&pfFalsePosSet);
-%             end
-%         end
-%     end
-% end
-% [a,b] = min(ScoreImage(:));
-% a
-% [a,b]=ind2sub(size(ScoreImage),b);
-% o.pQualThresh3=QualThresh3(a);
-% o.pQualThresh4=QualThresh4(b);
-% QualThresh3(a)
-% QualThresh4(b)
+%QualThresh3 = 0:25:300;
+%QualThresh4 = -300:25:0;
+QualThresh3 = 60:1:100;
+%QualThresh4 = -50:5:0;
+QualThresh4 = inf;
+ScoreImage = zeros(length(QualThresh3),length(QualThresh4));
+for i=1:length(QualThresh3)
+    o.pQualThresh3 = QualThresh3(i);
+    for j=1:length(QualThresh4)
+        o.pQualThresh4 = QualThresh4(j);
+        QualOK = quality_threshold(o,'Pixel');
+        for r=o.gtRounds
+            for b=o.UseChannels
+                if o.gtGeneNo(r,b)==0; continue; end
+                pfTruePosSet = o.([pf,'_gtIdentity']){r,b}==1;
+                pfFalsePosSet = o.([pf,'_gtIdentity']){r,b}==2;
+                %ScoreImage(i,j,k,k2) = ScoreImage(i,j,k,k2)+sum(QualOK&pfTruePosSet)/sum(pfTruePosSet)+...
+                %     5*sum(~QualOK&pfFalsePosSet)/sum(pfFalsePosSet);
+                ScoreImage(i,j) = ScoreImage(i,j)+sum(~QualOK&pfTruePosSet)+...
+                    sum(o.gtTruePositiveSet{r,b})-sum(pfTruePosSet)+2*sum(QualOK&pfFalsePosSet);
+            end
+        end
+    end
+end
+[a,b] = min(ScoreImage(:));
+a
+[a,b]=ind2sub(size(ScoreImage),b);
+o.pQualThresh3=QualThresh3(a);
+o.pQualThresh4=QualThresh4(b);
+QualThresh3(a)
+QualThresh4(b)
 
 %figure; imagesc(ScoreImage);
 
@@ -330,15 +340,15 @@ TruePosData.Summary(i,'Combined_nFP') = {Combined_nFP};
 % IntensityThresh = -10000:2000:8000;
 % ScoreThresh = -4:4:24;
 NeighbThresh = 7:1:11;
-IntensityThresh = 1800:10:2000;
+QualParam2 = 1800:10:2000;
 ScoreThresh = 12:0.05:12.8;
 
-ScoreImage = zeros(length(NeighbThresh),length(IntensityThresh),length(ScoreThresh));
+ScoreImage = zeros(length(NeighbThresh),length(QualParam2),length(ScoreThresh));
 
 for n=1:length(NeighbThresh)
     o.ompNeighbThresh=NeighbThresh(n);
-    for i=1:length(IntensityThresh)
-        o.ompIntensityThresh=IntensityThresh(i);
+    for i=1:length(QualParam2)
+        o.ompIntensityThresh=QualParam2(i);
         for s=1:length(ScoreThresh)
             o.ompScoreThresh=ScoreThresh(s);
             QualOK = quality_threshold(o,'OMP');
@@ -360,8 +370,8 @@ end
 a
 [a,b,c]=ind2sub(size(ScoreImage),b);
 o.ompNeighbThresh=NeighbThresh(a);
-o.ompIntensityThresh=IntensityThresh(b);
+o.ompIntensityThresh=QualParam2(b);
 o.ompScoreThresh = ScoreThresh(c);
 NeighbThresh(a)
-IntensityThresh(b)
+QualParam2(b)
 ScoreThresh(c)

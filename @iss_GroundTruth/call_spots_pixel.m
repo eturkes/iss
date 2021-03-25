@@ -23,8 +23,6 @@ function o = call_spots_pixel(o,LookupTable)
 % at that location.
 % pxSpotIntensity(Spot): intensity of the spot. Takes into account
 % pxSpotCodeNo. Calculated by get_spot_intensity.
-% pxSpotBestGene(Spot): gene index of gene with highest probability at this
-% location.
 % 
 %% Logging
 if o.LogToFile
@@ -123,6 +121,7 @@ LogProbOverBackground = cell(1,1);
 SecondBestLogProb = cell(1,1);
 ScoreDev = cell(1,1);
 SpotLocalTile = cell(1,1);
+SpotNotDuplicate = cell(1,1);
 SpotBestGene = cell(1,1);
     
 nFiles = length(o.PixelFileNames);
@@ -147,6 +146,11 @@ for f = 1:nFiles
     %memory issues. Only take gene which are 1st or second best at thier location
     %unless probability relative to background is good.
     QualOK = cellfun(@(x1,x2) x1-x2>=o.pxInitialScoreThresh | x1>o.pxInitialProbThresh,PeakLogProbOverBackground,Peak2ndBestLogProb,'UniformOutput',false);
+    gtGenes = o.gtGeneNo(o.gtGeneNo>0)';
+    for g=gtGenes
+        %Accept all ground truth genes
+        QualOK{g}(:) = true;
+    end
     PeakSpotColors = cellfun(@(x1,x2) x1(x2,:,:),PeakSpotColors,QualOK,'UniformOutput',false);
     PeakGlobalYX = cellfun(@(x1,x2) x1(x2,:),PeakGlobalYX,QualOK,'UniformOutput',false);
     PeakLogProbOverBackground = cellfun(@(x1,x2) x1(x2),PeakLogProbOverBackground,QualOK,'UniformOutput',false);
@@ -163,6 +167,7 @@ for f = 1:nFiles
     nd2ndBestLogProb = cell(nCodes,1);
     ndScoreDev = cell(nCodes,1);
     ndOriginalTile = cell(nCodes,1);
+    ndNotDuplicate = cell(nCodes,1);
     ndBestGene = cell(nCodes,1);
     
     for GeneNo = 1:nCodes
@@ -175,6 +180,13 @@ for f = 1:nFiles
         
         [AllLocalTile, ~] = which_tile(PeakGlobalYX{GeneNo}, o.TileOrigin(:,:,rr), o.TileSz);
         NotDuplicate = (AllLocalTile==OriginalTile{GeneNo});
+        if ismember(GeneNo,gtGenes)
+            %Keep duplicates for ground truth spots
+            ndNotDuplicate{GeneNo} = NotDuplicate;
+            NotDuplicate(:) = true;
+        else
+            ndNotDuplicate{GeneNo} = NotDuplicate(NotDuplicate); 
+        end
         
         ndSpotColors{GeneNo} = PeakSpotColors{GeneNo}(NotDuplicate,:,:);
         ndGlobalYX{GeneNo} = PeakGlobalYX{GeneNo}(NotDuplicate,:);
@@ -206,6 +218,7 @@ for f = 1:nFiles
         SecondBestLogProb{1} = [SecondBestLogProb{1};nd2ndBestLogProb{GeneNo}];
         ScoreDev{1} = [ScoreDev{1};ndScoreDev{GeneNo}];
         SpotLocalTile{1} = [SpotLocalTile{1};ndOriginalTile{GeneNo}];
+        SpotNotDuplicate{1} = [SpotNotDuplicate{1};ndNotDuplicate{GeneNo}];
         SpotBestGene{1} = [SpotBestGene{1};ndBestGene{GeneNo}];
     end
     clearvars ndSpotColors ndGlobalYX ndLogProbOverBackground nd2ndBestLogProb ndScoreDev
@@ -222,6 +235,7 @@ o.pxSpotScore = o.pxLogProbOverBackground-cell2mat(SecondBestLogProb);
 o.pxSpotScoreDev = cell2mat(ScoreDev);        
 o.pxSpotIntensity = o.get_spot_intensity(o.pxSpotCodeNo,o.pxSpotColors);
 o.pxLocalTile = int16(cell2mat(SpotLocalTile));
+o.pxNotDuplicate = logical(cell2mat(SpotNotDuplicate));
 o.pxSpotBestGene = int16(cell2mat(SpotBestGene));
 end
 

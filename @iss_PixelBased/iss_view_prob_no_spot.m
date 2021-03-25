@@ -61,27 +61,44 @@ end
 if t==0
     t = o.get_local_tile([xy(2),xy(1)]);
 end
-LocalYX = [xy(2),xy(1)]-o.TileOrigin(t,:,o.ReferenceRound)-o.TileCentre;
-SpotColor = zeros(1,o.nBP,o.nRounds);
-for r=1:o.nRounds
-    for b=1:o.nBP
-        
-        rbYX = round([LocalYX,1]*o.D(:,:,t,r,b)+o.TileCentre);
-        y0 = rbYX(1);
-        x0 = rbYX(2);
-        if y0>o.TileSz || y0<1 || x0>o.TileSz || x0<1
-            warning('Round %d, channel %d on different tile, setting to 0',r,b)
-            continue;
-        end
-        SpotColor(:,b,r) = int32(imread(o.TileFiles{r,t}, b, 'PixelRegion', {[y0 y0], [x0 x0]}))-o.TilePixelValueShift;
-    end
-end
+% LocalYX = [xy(2),xy(1)]-o.TileOrigin(t,:,o.ReferenceRound)-o.TileCentre;
+
+[RoundTile,~] = get_SpotTileEachRound(o,flip(xy),t);
+LocalYX = flip(xy)-o.TileOrigin(t,:,o.ReferenceRound);
+load(fullfile(o.OutputDirectory, 'FindSpotsWorkspace.mat'), 'AllBaseLocalYX');
+SpotColor = get_spot_colors(o,LocalYX,t,...
+    RoundTile,AllBaseLocalYX);
+% 
+% SpotColor = zeros(1,o.nBP,o.nRounds);
+% for r=1:o.nRounds
+%     for b=1:o.nBP
+%         
+%         rbYX = round([LocalYX,1]*o.D(:,:,t,r,b)+o.TileCentre);
+%         y0 = rbYX(1);
+%         x0 = rbYX(2);
+%         if y0>o.TileSz || y0<1 || x0>o.TileSz || x0<1
+%             warning('Round %d, channel %d on different tile, setting to 0',r,b)
+%             continue;
+%         end
+%         SpotColor(:,b,r) = int32(imread(o.TileFiles{r,t}, b, 'PixelRegion', {[y0 y0], [x0 x0]}))-o.TilePixelValueShift;
+%     end
+% end
 
 %% Get matching gene and score values
-[LogProbOverBackground,LogProbOverBackgroundMatrix] = get_LogProbOverBackground(o,SpotColor,LookupTable);
-[S.LogProbOverBackground,S.CodeNoAll] = sort(LogProbOverBackground,2,'descend');
 nCodes = length(o.CharCodes);
-S.ProbMatrices = reshape(LogProbOverBackgroundMatrix',[nCodes,o.nBP,o.nRounds]);
+if isempty(o.HistZeroIndex)
+    warning('foo:bar',['5/3/2021 update changed the way LookupTable calculated for Prob and PixelBased methods.\n',...
+        'Delete LookupTable%.0f.mat in:\n%s\n'...
+        'Rerun [o,LookupTable]=o.call_spots_prob;'],o.ProbMethod,o.OutputDirectory);
+    S.ProbMatrices = zeros(nCodes,o.nBP,o.nRounds);
+    LogProbOverBackground = zeros(nCodes,1);
+    S.LogProbOverBackground = zeros(nCodes,1);
+    S.CodeNoAll = 1:nCodes;
+else
+    [LogProbOverBackground,LogProbOverBackgroundMatrix] = get_LogProbOverBackground(o,SpotColor,LookupTable);
+    [S.LogProbOverBackground,S.CodeNoAll] = sort(LogProbOverBackground,2,'descend');
+    S.ProbMatrices = reshape(LogProbOverBackgroundMatrix',[nCodes,o.nBP,o.nRounds]);
+end
 
 S.GeneRank = find(ismember(S.CodeNoAll,GeneNumbers));
 S.CodeNoAll = S.CodeNoAll(S.GeneRank);
@@ -144,7 +161,8 @@ S.UnbledCodes = o.UnbledCodes;
 S.MinAllColors = min(o.pSpotColors(:));
 S.MaxAllColors = max(o.pSpotColors(:));
 S.LambdaDist = o.LambdaDist;
-S.SymmHistValues = o.SymmHistValues;
+S.HistValues = o.HistValues;
+S.HistZeroIndex = o.HistZeroIndex;
 S.HistProbs = o.HistProbs;
 S.BackgroundProb = o.BackgroundProb;
 S.BackgroundLambdaDist = o.BackgroundLambdaDist;
@@ -256,21 +274,26 @@ function getCoord(aH,evnt,S)
 %intensity when a left click is applied on a square in the LogProb plot.
 %When a right click is applied, a plot showing the individual distributions
 %contributing to the LogProb(r,b) in the LogProb plot appears.
+if isempty(S.HistZeroIndex)
+    error('foo:bar',['5/3/2021 update changed the way LookupTable calculated for Prob and PixelBased methods.\n',...
+        'Delete LookupTable%.0f.mat in:\n%s\n'...
+        'Rerun [o,LookupTable]=o.call_spots_prob;'],o.ProbMethod,o.OutputDirectory);
+end
 drawnow
 fig = ancestor(aH,'figure');
 click_type = get(fig,'SelectionType');
 ClickLoc = evnt.IntersectionPoint(1:2);
 r = round(ClickLoc(1));
 b = round(ClickLoc(2));
-f = S.SpotColor(:,b,r);
-x = min(f,S.MinAllColors-1):max(f,S.MaxAllColors-1);
-
+f = double(S.SpotColor(:,b,r));
+x = -(S.ZeroIndex+S.HistZeroIndex-2):...
+    -(S.ZeroIndex+S.HistZeroIndex-2)+length(S.BackgroundProb(:,b,r))-1;
 XLim = [min(x)-2000,max(x)+2000];
 NormYLim = [round(min(log(S.HistProbs(:)))-4),0];
 AltYLim = [0,max([max(S.LambdaDist(:)),max(S.HistProbs(:))])+0.05];
 
 if strcmp(click_type,'normal')
-    LogProbPlot = log(conv(S.LambdaDist(:,S.CodeNo,b,r),S.HistProbs(:,b,r),'same'));
+    LogProbPlot = log(conv(S.LambdaDist(:,S.CodeNo,b,r),S.HistProbs(:,b,r)));
     %Get background too
     BackgroundProb = log(S.BackgroundProb(:,b,r));   
     figure(35458);
@@ -291,17 +314,18 @@ if strcmp(click_type,'normal')
     ylim(NormYLim);
     
 elseif strcmp(click_type,'alt')
-    HistZeroIndex = find(S.SymmHistValues == 0);
-    x2 = x(x<HistZeroIndex+f);      %So ensure indices>0
-    hIndices = HistZeroIndex+f-x2;
-    Use = hIndices<length(S.SymmHistValues);
+    xPlot2 = -S.ZeroIndex+1:S.ZeroIndex+length(S.LambdaDist(:,S.CodeNo,b,r))-2;
+    xPlotHist = min(S.HistValues+f):max(xPlot2);
+    x2 = xPlotHist(xPlotHist<S.HistZeroIndex+f);      %So ensure indices>0
+    hIndices = S.HistZeroIndex+f-x2;
+    Use = hIndices<length(S.HistValues);
     HistDist = S.HistProbs(hIndices(Use),b,r);
-    LambdaIndices = find(x<HistZeroIndex+f);
+    LambdaIndices = find(xPlotHist<S.HistZeroIndex+f);
     figure(9264992);
-    plot(x(LambdaIndices(Use)),S.LambdaDist(LambdaIndices(Use),S.CodeNo,b,r),'Color',[0, 0.4470, 0.7410]);
+    plot(xPlot2,S.LambdaDist(:,S.CodeNo,b,r),'Color',[0, 0.4470, 0.7410]);
     hold on
-    plot(x(LambdaIndices(Use)),HistDist,'Color','red');
-    plot(x(LambdaIndices(Use)),S.BackgroundLambdaDist(LambdaIndices(Use)),'Color',[0.25, 0.25, 0.25]);
+    plot(xPlotHist(LambdaIndices(Use)),HistDist,'Color','red');
+    plot(xPlot2,S.BackgroundLambdaDist,'Color',[0.25, 0.25, 0.25]);
     hold off
     title({'For spot s, gene g and background distribution $$P_b$$; given $$x=\lambda g$$:',...
         '$$P(s\mid g) = \int P(\lambda)P_b(s-\lambda g)d\lambda = \frac{1}{g}\sum_{x} P\left(\frac{x}{g}\right)P_b(s-x)$$'},...

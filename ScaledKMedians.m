@@ -1,18 +1,23 @@
-function [k, v, s2] = ScaledKMeans(x, v0)
-% [k, v] = ScaledKMeans(x, v0);
+function [k, v, s2] = ScaledKMedians(x, v0)
+% [k, v] = ScaledKMedians(x, v0);
 %
 % does a clustering that minimizes the norm of x_i - g_i * v_{k_i}, where:
 % x_i is the i'th row of input matrix x (nPoints by nDims)
 % g_i is a gain (not explicitly computed or returned)
-% v_k is the k'th row of output v containing cluster means (nClusters by nDims)
+% v_k is the k'th row of output v containing cluster medians (nClusters by nDims)
 % k_i is the i'th entry of output k giving the cluster of each point (nPoints by 1)
-% s2_k is the first eigenval of the outer product matrix for cluster k
-%
+% s2_k is the squared norm of v_k.
+% 
 % input v0 (nClusters by nDims) is the starting point. (Required.)
+% 
+% This assigns each row of x to a row of v based on dot product between
+% normalised x and v. Then update v by taking median of all x assigned to
+% that row of v. 
 
 ScoreThresh = 0; % only keep good matches 
 MinClusterSize = 10; % delete clusters with too few points
 ConvergenceCriterion = 0; % if this many or less changed, terminate
+ScoreDiffThresh = 1e-4;  % if spot equally likely two classes then ignore. 
 
 % normalize starting points and original data
 vNorm = bsxfun(@rdivide, v0, sqrt(sum(v0.^2,2)));
@@ -28,16 +33,18 @@ k = nan; % to make sure it doesn't finish on first iteration
 
 for i=1:MaxIter
     kOld = k;
+    vOld = v;
     
     score = xNorm*v'; % project each point onto each cluster. Use normalized so we can interpret score
-    [TopScore, k] = max(score,[],2); % find best cluster for each point
-    k(TopScore<ScoreThresh)=0; % unclusterable points
+    [SortScore,ClusterIndex] = sort(score,2,'descend');
+    k = ClusterIndex(:,1);      % find best cluster for each point
+    k(SortScore(:,1)<ScoreThresh | SortScore(:,1)-SortScore(:,2)<ScoreDiffThresh)=0; % unclusterable points
     
     if sum(k~=kOld)<=ConvergenceCriterion % need a better criterion!
         break;
     end
 
-    % find top svd component for points assigned to each cluster
+    % find median for points assigned to each cluster
     for c=1:nClusters
         MyPoints = x(k==c,:); % don't use normalized, to avoid overweighting weak points
         nMyPoints = length(MyPoints);
@@ -45,7 +52,10 @@ for i=1:MaxIter
             v(c,:) = 0;
             continue;
         end
-        [TopEvec, s2(c)] = eigs(double(MyPoints'*MyPoints)/nMyPoints, 1);
+        TopEvec = median(MyPoints)';
+        %[TopEvec, s2(c)] = eigs(robustcov(MyPoints), 1);   %More Proper but gives too large values.
+        s2(c) = vecnorm(TopEvec);
+        TopEvec = TopEvec/s2(c);
         v(c,:) = TopEvec*sign(mean(TopEvec)); % make them positive
     end
     
@@ -56,4 +66,6 @@ for i=1:MaxIter
 
     
 end
+%Square the norm of v2 so consistent with output of ScaledKMeans. 
+s2 = s2.^2; 
 
